@@ -70,7 +70,13 @@ let targets = [];
 if (releaseTag) {
   const rel = await gh(`/repos/${REPO}/releases/tags/${releaseTag}`);
   console.log(`Release ${rel.tag_name}  draft=${rel.draft} prerelease=${rel.prerelease}  附件数=${rel.assets.length}`);
-  targets = rel.assets.map((a) => ({ name: a.name, url: a.url, expected: a.size, api: true }));
+  targets = rel.assets.map((a) => ({
+    name: a.name,
+    url: a.url,
+    browser_url: a.browser_download_url,
+    expected: a.size,
+    api: true,
+  }));
 } else {
   const list = await gh(`/repos/${REPO}/actions/runs/${runId}/artifacts`);
   targets = list.artifacts
@@ -95,10 +101,32 @@ for (const t of targets) {
     const buf = Buffer.from(await res.arrayBuffer());
     const sha = createHash("sha256").update(buf).digest("hex");
     const sig = signatureOk(buf, ext(t.name));
-    const ok = res.status === 200 && buf.length > 0 && buf.length === t.expected && sig.ok;
+    // 公开仓库的附件必须能匿名下载，否则别人拿到的链接是死的。
+    const anon = await fetch(t.browser_url, {
+      headers: { "User-Agent": "crr-verify-anon" },
+      redirect: "follow",
+      method: "GET",
+      range: "bytes=0-63",
+    });
+    const anonBuf = Buffer.from(await anon.arrayBuffer());
+    const anonOk = (anon.status === 200 || anon.status === 206) && anonBuf.length > 0;
+    const ok = res.status === 200 && buf.length > 0 && buf.length === t.expected && sig.ok && anonOk;
     if (!ok) failures++;
-    report.push({ name: t.name, http: res.status, bytes: buf.length, expected: t.expected, sha256: sha, sig: sig.note, ok });
-    console.log(`${ok ? "PASS" : "FAIL"} ${t.name.padEnd(52)} http=${res.status} ${buf.length}/${t.expected} ${sig.note}`);
+    report.push({
+      name: t.name,
+      http: res.status,
+      bytes: buf.length,
+      expected: t.expected,
+      sha256: sha,
+      sig: sig.note,
+      anon_http: anon.status,
+      anon_bytes: anonBuf.length,
+      download_url: t.browser_url,
+      ok,
+    });
+    console.log(
+      `${ok ? "PASS" : "FAIL"} ${t.name.padEnd(52)} http=${res.status} ${buf.length}/${t.expected} anon=${anon.status} ${sig.note}`
+    );
   } else {
     // 运行产物动辄几十 MB，这里只用 Range 取头部验证可下载性与签名，
     // 体积以 API 声明值为准；逐字节核对留给真正的 Release 附件。
