@@ -3,6 +3,7 @@ mod engine;
 mod error;
 mod model;
 mod source_local;
+mod source_mirror;
 mod source_org;
 mod source_status;
 mod store;

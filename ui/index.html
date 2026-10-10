@@ -74,9 +74,13 @@
               placeholder="https://ntfy.sh/你的topic 或 https://api.day.app/你的key"
             />
           </label>
+          <label
+            >境内镜像地址（可选，留空则直连官方站点）
+            <input type="text" id="s-mirror" placeholder="https://lain42.top/codex/data.json" />
+          </label>
           <p class="hint">
-            填了之后，桌面端检查出的提醒会同时推到手机，iPhone 不需要让 App 常驻；
-            没填就只发本机通知。
+            推送：填了之后，桌面端命中提醒时会同时 POST 一份到手机，iPhone 不需要让 App 常驻。<br />
+            镜像：国内直连两个第三方站点不稳定，填你自己服务器上的 data.json；镜像失败会自动退回直连。
           </p>
           <div class="form-actions">
             <button type="submit">保存设置</button>

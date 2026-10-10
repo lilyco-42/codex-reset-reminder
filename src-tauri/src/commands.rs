@@ -9,6 +9,7 @@ use crate::engine::evaluate;
 use crate::error::{AppError, Result};
 use crate::model::{CheckResult, LocalSnapshot, RunState, Settings, StatusInfo, TrackerEvent};
 use crate::source_local::{default_codex_home, read_local};
+use crate::source_mirror::parse_mirror;
 use crate::source_org::{latest_confirmed, parse_tracker};
 use crate::source_status::parse_status;
 use crate::store::Store;
@@ -179,36 +180,65 @@ pub async fn crr_check(
     let local = read_now(now_ms);
     let mut errors: Vec<String> = Vec::new();
 
-    let tracker: Vec<TrackerEvent> = match get_text(TRACKER_URL).await {
-        Ok(html) => {
-            let e = parse_tracker(&html);
-            if e.is_empty() {
-                errors.push("追踪器页面结构可能变了：没解析到任何时间线节点".to_string());
-            }
-            e
-        }
-        Err(e) => {
-            errors.push(format!("追踪器：{e}"));
-            Vec::new()
-        }
+    let cfg = {
+        let guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
+        guard.settings.clone()
     };
-    let status: Option<StatusInfo> = match get_text(STATUS_URL).await {
-        Ok(json) => match parse_status(&json) {
-            Ok(s) => Some(s),
+
+    let mut tracker: Vec<TrackerEvent> = Vec::new();
+    let mut status: Option<StatusInfo> = None;
+    let mut from_mirror = false;
+
+    // 镜像优先：境内直连两个第三方站点不稳定，自建镜像一次给齐事件与状态。
+    let mirror = cfg.mirror_url.trim().to_string();
+    if !mirror.is_empty() {
+        match get_text(&mirror).await {
+            Ok(json) => match parse_mirror(&json, now_ms) {
+                Ok(m) => {
+                    from_mirror = true;
+                    tracker = m.events;
+                    status = m.status;
+                    for e in m.errors {
+                        errors.push(format!("镜像内部告警：{e}"));
+                    }
+                }
+                Err(e) => errors.push(format!("镜像：{e}；改用直连")),
+            },
+            Err(e) => errors.push(format!("镜像：{e}；改用直连")),
+        }
+    }
+
+    if !from_mirror {
+        tracker = match get_text(TRACKER_URL).await {
+            Ok(html) => {
+                let e = parse_tracker(&html);
+                if e.is_empty() {
+                    errors.push("追踪器页面结构可能变了：没解析到任何时间线节点".to_string());
+                }
+                e
+            }
+            Err(e) => {
+                errors.push(format!("追踪器：{e}"));
+                Vec::new()
+            }
+        };
+        status = match get_text(STATUS_URL).await {
+            Ok(json) => match parse_status(&json) {
+                Ok(s) => Some(s),
+                Err(e) => {
+                    errors.push(format!("状态接口：{e}"));
+                    None
+                }
+            },
             Err(e) => {
                 errors.push(format!("状态接口：{e}"));
                 None
             }
-        },
-        Err(e) => {
-            errors.push(format!("状态接口：{e}"));
-            None
-        }
-    };
+        };
+    }
 
     let (report, push_target) = {
         let mut guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
-        let cfg = guard.settings.clone();
         let push = cfg.push_url.clone();
         let r = evaluate(
             &cfg,
@@ -237,6 +267,11 @@ pub async fn crr_check(
         }
         CheckResult {
             fetched_at_ms: now_ms,
+            source_used: if from_mirror {
+                "mirror".into()
+            } else {
+                "direct".into()
+            },
             local: local.clone(),
             tracker: tracker.clone(),
             last_global_reset: latest_confirmed(&tracker),
@@ -375,6 +410,12 @@ fn clamp_settings(mut s: Settings) -> Result<Settings> {
             "推送地址必须以 https:// 开头（ntfy topic 或 Bark 地址）".into(),
         ));
     }
+    s.mirror_url = s.mirror_url.trim().to_string();
+    if !s.mirror_url.is_empty() && !s.mirror_url.starts_with("https://") {
+        return Err(AppError::Args(
+            "镜像地址必须以 https:// 开头，留空表示直连两个官方站点".into(),
+        ));
+    }
     Ok(s)
 }
 
@@ -428,6 +469,26 @@ mod tests {
         };
         let e = clamp_settings(bad).expect_err("非 https 应报错");
         assert!(e.to_string().contains("https://"), "错误文案要能看懂：{e}");
+    }
+
+    #[test]
+    fn mirror_url_is_optional_and_https_only() {
+        let s = clamp_settings(Settings::default()).expect("默认设置应通过");
+        assert!(
+            s.mirror_url.is_empty(),
+            "默认不启用镜像，行为与 v0.1.0 一致"
+        );
+        let ok = clamp_settings(Settings {
+            mirror_url: "  https://lain42.top/codex/data.json  ".into(),
+            ..Settings::default()
+        })
+        .expect("https 镜像地址应通过");
+        assert_eq!(ok.mirror_url, "https://lain42.top/codex/data.json");
+        let bad = clamp_settings(Settings {
+            mirror_url: "http://lain42.top/codex/data.json".into(),
+            ..Settings::default()
+        });
+        assert!(bad.is_err(), "明文 http 镜像必须拒绝");
     }
 
     #[test]

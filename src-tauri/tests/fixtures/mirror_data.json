@@ -1,0 +1,249 @@
+{
+ "generated_at_ms": 1791649812785,
+ "generated_at_cst": "2026-10-11 00:30:12",
+ "sources": {
+  "tracker": "https://codexreset.org",
+  "status": "https://codex-reset.com/api/status"
+ },
+ "events": [
+  {
+   "date_time": "2026-10-07T03:35:09.000Z",
+   "ts_ms": 1791344109000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2107676072871600470"
+  },
+  {
+   "date_time": "2026-10-06T21:39:42.000Z",
+   "ts_ms": 1791322782000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2107586622766366739"
+  },
+  {
+   "date_time": "2026-10-06T21:38:35.000Z",
+   "ts_ms": 1791322715000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2107586339860631980"
+  },
+  {
+   "date_time": "2026-10-06T02:21:15.000Z",
+   "ts_ms": 1791253275000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2107295089416708515"
+  },
+  {
+   "date_time": "2026-10-05T17:20:57.000Z",
+   "ts_ms": 1791220857000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2107159119107146237"
+  },
+  {
+   "date_time": "2026-10-05T04:38:03.000Z",
+   "ts_ms": 1791175083000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2106967126250791091"
+  },
+  {
+   "date_time": "2026-10-03T03:39:19.000Z",
+   "ts_ms": 1790998759000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2106227571088392653"
+  },
+  {
+   "date_time": "2026-10-02T21:18:48.000Z",
+   "ts_ms": 1790975928000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2106131810921136451"
+  },
+  {
+   "date_time": "2026-09-26T21:41:35.000Z",
+   "ts_ms": 1790458895000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2103963215885701493"
+  },
+  {
+   "date_time": "2026-09-26T18:17:54.000Z",
+   "ts_ms": 1790446674000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2103911959544610829"
+  },
+  {
+   "date_time": "2026-09-23T22:13:19.000Z",
+   "ts_ms": 1790201599000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2102884039145521487"
+  },
+  {
+   "date_time": "2026-09-12T08:09:17.000Z",
+   "ts_ms": 1789200557000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2098685367058612394"
+  },
+  {
+   "date_time": "2026-09-11T06:39:40.000Z",
+   "ts_ms": 1789108780000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2098300424520687965"
+  },
+  {
+   "date_time": "2026-09-08T04:05:53.000Z",
+   "ts_ms": 1788840353000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2097174560412246215"
+  },
+  {
+   "date_time": "2026-09-08T02:00:00.000Z",
+   "ts_ms": 1788832800000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2097043464538264003"
+  },
+  {
+   "date_time": "2026-08-31T02:34:27.000Z",
+   "ts_ms": 1788143667000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2094252447271366730"
+  },
+  {
+   "date_time": "2026-08-31T02:29:25.000Z",
+   "ts_ms": 1788143365000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2094251180121854309"
+  },
+  {
+   "date_time": "2026-08-29T20:43:34.000Z",
+   "ts_ms": 1788036214000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2093801758665715784"
+  },
+  {
+   "date_time": "2026-08-27T16:35:05.000Z",
+   "ts_ms": 1787848505000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2093014447833116908"
+  },
+  {
+   "date_time": "2026-08-25T18:20:36.000Z",
+   "ts_ms": 1787682036000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2092316228497063958"
+  },
+  {
+   "date_time": "2026-08-25T18:00:04.000Z",
+   "ts_ms": 1787680804000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2092311059197808936"
+  },
+  {
+   "date_time": "2026-08-24T00:46:51.000Z",
+   "ts_ms": 1787532411000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2091688655828246890"
+  },
+  {
+   "date_time": "2026-08-13T00:00:00.000Z",
+   "ts_ms": 1786579200000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2087423996115681767"
+  },
+  {
+   "date_time": "2026-08-11T00:28:16.000Z",
+   "ts_ms": 1786408096000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2086972933566857393"
+  },
+  {
+   "date_time": "2026-08-08T20:29:22.000Z",
+   "ts_ms": 1786220962000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2086188036493344823"
+  },
+  {
+   "date_time": "2026-08-01T03:32:37.000Z",
+   "ts_ms": 1785555157000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2083395449814229287"
+  },
+  {
+   "date_time": "2026-07-29T04:09:02.000Z",
+   "ts_ms": 1785298142000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2082317452755751098"
+  },
+  {
+   "date_time": "2026-07-28T03:09:23.000Z",
+   "ts_ms": 1785208163000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2081940052154933696"
+  },
+  {
+   "date_time": "2026-07-25T19:17:12.000Z",
+   "ts_ms": 1785007032000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2081096447718723984"
+  },
+  {
+   "date_time": "2026-07-21T17:47:15.000Z",
+   "ts_ms": 1784656035000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2079609157934886975"
+  },
+  {
+   "date_time": "2026-07-18T03:28:22.000Z",
+   "ts_ms": 1784345302000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2078320950488297917"
+  },
+  {
+   "date_time": "2026-07-16T04:14:09.822Z",
+   "ts_ms": 1784175249822,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2077607697487188198"
+  },
+  {
+   "date_time": "2026-07-14T19:34:54.638Z",
+   "ts_ms": 1784057694638,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2077114635308986427"
+  },
+  {
+   "date_time": "2026-07-12T17:59:57.945Z",
+   "ts_ms": 1783879197945,
+   "kind": "confirmed",
+   "source_url": "https://x.com/thsottiaux/status/2076365965915467978"
+  },
+  {
+   "date_time": "2026-07-10T19:03:50.000Z",
+   "ts_ms": 1783710230000,
+   "kind": "confirmed",
+   "source_url": "https://x.com/OpenAI/status/2075657265508647008"
+  },
+  {
+   "date_time": "2026-07-10T05:30:00.000Z",
+   "ts_ms": 1783661400000,
+   "kind": "confirmed",
+   "source_url": "https://codex-reset-radar.pages.dev/en/"
+  },
+  {
+   "date_time": "2026-06-29T00:00:00.000Z",
+   "ts_ms": 1782691200000,
+   "kind": "confirmed",
+   "source_url": "https://status.openai.com/incidents/6enf4645"
+  }
+ ],
+ "latest_confirmed": {
+  "date_time": "2026-10-07T03:35:09.000Z",
+  "ts_ms": 1791344109000,
+  "kind": "confirmed",
+  "source_url": "https://x.com/thsottiaux/status/2107676072871600470"
+ },
+ "confirmed_count": 28,
+ "status": {
+  "indicator": "minor",
+  "description": "Partial System Degradation",
+  "codex": "operational",
+  "degraded": false,
+  "incident_count": 0,
+  "checked_at": "2026-10-10T16:25:54.437Z",
+  "in_trouble": false
+ },
+ "errors": []
+}

@@ -87,6 +87,27 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 桌面端跑引擎，命中提醒时同时 POST 到你填的 ntfy topic 或 Bark 地址（设置里 `push_url`，必须 https）。
 手机装免费的 ntfy / Bark App 订阅即可，不需要服务器、不需要 Apple 开发者账号。
 
+## 境内镜像（可选）
+
+国内直连两个第三方站点不稳定，所以仓库带了一套自托管镜像，跑在境内服务器上：
+
+| 文件 | 作用 |
+| --- | --- |
+| `mirror/sync.py` | 抓两个源 → 解析 → 原子写 `data.json` + 内联数据的 `index.html`。只用标准库，跑完即退，无常驻进程 |
+| `mirror/codex-reset-mirror.{service,timer}` | systemd oneshot + 10 分钟 timer |
+| `mirror/patch-pingap-codex.py` | 幂等地给 pingap 加一条 `/codex` 静态目录 location（带 dry-run、备份、`pingap -t` 自检） |
+
+实测数据（境内阿里云机）：`codexreset.org` 200 / 9.8 s，`codex-reset.com/api/status` 200 / 2.6 s，
+`x.com` 直连失败（所以页面上的"原帖"链接在境内需要代理才能打开）。
+同步一轮 6.99 s，产出 `data.json` 7 062 B、`index.html` 10 986 B。
+
+App 侧：设置里填 `mirror_url`（必须 https）即优先走镜像，一次请求同时拿到事件与状态；
+**镜像失败或数据超过 6 小时没更新会自动退回直连并在状态栏说明**——后者是防止同步任务悄悄停了、
+App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
+
+`mirror_data.json` 夹具是服务器上 Python 真实产出的文件，由 Rust 读取端测试——
+写入端和读取端不共享代码，所以不会互相印证出同一个错误。
+
 ## 已知边界
 
 - **Android 13+ 通知权限**：Tauri 的 Android 模板只声明 `INTERNET`，缺 `POST_NOTIFICATIONS` 时通知会被系统静默丢弃，所以 CI 在 `android init` 之后把该权限注入生成的 manifest（注入步骤自带幂等守卫与回读断言）。但**运行时授权弹窗**仍需真机验证：插件的 Rust `show()` 不保证会主动申请，首次装好可能要在系统设置里手动放行一次。

@@ -169,6 +169,7 @@
 
   function render(r) {
     last = r;
+    const srcLabel = r.source_used === "mirror" ? "数据源：镜像" : "数据源：直连";
     renderWindows(r.local);
     renderMeta(r.local);
     renderGlobal(r);
@@ -177,10 +178,10 @@
     applySettingsToForm(r.settings);
     $("local-note").className = r.local && r.local.source === "local" ? "hint" : "hint warn";
     const err = (r.errors || [])[0];
-    if (err) setStatus(`最近一次检查有错误：${err}`, "warn");
+    if (err) setStatus(`最近一次检查有错误（${srcLabel}）：${err}`, "warn");
     else if (r.fired && r.fired.length)
-      setStatus(`已发出 ${r.fired.length} 条提醒 · ${fmt(r.fetched_at_ms)}`, "ok");
-    else setStatus(`最近检查 ${fmt(r.fetched_at_ms)} · 无新提醒`, "ok");
+      setStatus(`已发出 ${r.fired.length} 条提醒 · ${srcLabel} · ${fmt(r.fetched_at_ms)}`, "ok");
+    else setStatus(`最近检查 ${fmt(r.fetched_at_ms)} · ${srcLabel} · 无新提醒`, "ok");
     schedule(r.settings);
   }
 
@@ -232,6 +233,7 @@
     $("s-status").checked = !!s.notify_status_incident;
     $("s-autostart").checked = !!s.autostart;
     $("s-push").value = s.push_url || "";
+    $("s-mirror").value = s.mirror_url || "";
   }
 
   function formToSettings() {
@@ -253,6 +255,7 @@
       notify_status_incident: $("s-status").checked,
       autostart: $("s-autostart").checked,
       push_url: $("s-push").value.trim(),
+      mirror_url: $("s-mirror").value.trim(),
     };
   }
 

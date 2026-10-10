@@ -140,6 +140,8 @@ pub struct Alert {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CheckResult {
     pub fetched_at_ms: i64,
+    /// mirror | direct：本轮事件与状态到底是从哪来的
+    pub source_used: String,
     pub local: LocalSnapshot,
     pub tracker: Vec<TrackerEvent>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -171,6 +173,8 @@ pub struct Settings {
     /// ntfy topic 或 Bark 地址；填了就把同样的提醒再推一份到手机，
     /// 这样 iPhone 不需要让 App 常驻也能收到。
     pub push_url: String,
+    /// 自建镜像的 data.json 地址（境内可达）。留空则直连两个第三方站点。
+    pub mirror_url: String,
 }
 
 impl Default for Settings {
@@ -191,6 +195,7 @@ impl Default for Settings {
             notify_status_incident: true,
             autostart: true,
             push_url: String::new(),
+            mirror_url: String::new(),
         }
     }
 }

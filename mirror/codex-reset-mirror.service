@@ -1,0 +1,17 @@
+[Unit]
+Description=Codex 额度重置数据镜像同步
+Documentation=https://github.com/lilyco-42/codex-reset-reminder
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/codex-reset-mirror/sync.py --out /var/www/codex-mirror/codex
+# 只写自己那一份目录，不碰游戏相关的任何路径
+NoNewPrivileges=yes
+UMask=0022
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/var/www/codex-mirror
+TimeoutStartSec=120
