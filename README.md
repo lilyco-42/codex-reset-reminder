@@ -84,6 +84,7 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 
 ## 已知边界
 
+- **Android 13+ 通知权限**：Tauri 的 Android 模板只声明 `INTERNET`，缺 `POST_NOTIFICATIONS` 时通知会被系统静默丢弃，所以 CI 在 `android init` 之后把该权限注入生成的 manifest（注入步骤自带幂等守卫与回读断言）。但**运行时授权弹窗**仍需真机验证：插件的 Rust `show()` 不保证会主动申请，首次装好可能要在系统设置里手动放行一次。
 - **移动端读不到本机额度**：iOS/Android 没有 `~/.codex` 会话日志，界面会明确标注，只显示全局重置与服务状态；个人额度靠桌面端转发推送。
 - **没有自建推送服务**：推送依赖 ntfy.sh / Bark 这类公共服务，且 iOS 推送最终仍经 APNs，公共免费通道有频率上限。
 - **iOS 真机安装**：CI 产出的是**未签名 `.ipa`**（`tauri ios build --no-sign`），需用 SideStore/AltStore 以免费 Apple ID 重签后安装，免费账号 7 天过期需续签；付费开发者账号可延长到 1 年。

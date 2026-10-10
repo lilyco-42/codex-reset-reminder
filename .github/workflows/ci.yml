@@ -139,6 +139,17 @@ jobs:
           workspaces: src-tauri
       - name: 生成 Android 工程
         run: ${{ env.CLI }} android init --ci
+      - name: 补 POST_NOTIFICATIONS（模板里只有 INTERNET，Android 13+ 缺它通知会静默丢弃）
+        working-directory: src-tauri/gen/android
+        run: |
+          MANIFEST=app/src/main/AndroidManifest.xml
+          test -f "$MANIFEST"
+          if ! grep -q "android.permission.POST_NOTIFICATIONS" "$MANIFEST"; then
+            sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />#' "$MANIFEST"
+          fi
+          grep -q "android.permission.POST_NOTIFICATIONS" "$MANIFEST" || { echo "权限未写入，终止"; exit 1; }
+          echo "--- 注入后的权限声明 ---"
+          grep -n "uses-permission" "$MANIFEST"
       - name: 构建 debug APK（可直接侧载）
         run: ${{ env.CLI }} android build --apk --debug --target aarch64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
