@@ -191,4 +191,6 @@ jobs:
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: dist/**
-          generate_release_notes: true
+          body_path: docs/RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+          make_latest: "true"

@@ -243,9 +243,11 @@ mod tests {
 
     #[test]
     fn newest_line_without_markers_is_skipped_and_the_older_one_is_used() {
-        // 反向遍历的正向对照：最新一行没有额度字段时，要退到上一行，而不是读成空。
+        // 反向遍历的正向对照：首行会被当截断丢弃，所以数据要放在中间，
+        // 最新一行故意不带额度字段，验证会退到上一行而不是读成空。
         let text = format!(
-            "{}\n{}\n",
+            "{}\n{}\n{}\n",
+            r#"{"timestamp":"2026-10-10T11:00:00.000Z","payload":{"type":"throwaway"}}"#,
             line(rl(21.0, 555, 300)),
             r#"{"timestamp":"2026-10-10T13:00:00.000Z","payload":{"type":"other"}}"#
         );
@@ -293,7 +295,9 @@ mod tests {
         assert!(first.is_object(), "夹具第一块应为对象，实际 {first}");
         let direct = serde_json::from_value::<RateLimits>(first.clone());
         assert!(direct.is_ok(), "结构体与真实字段不匹配：{:?}", direct.err());
-        let line = serde_json::to_string(&json!({ "payload": first })).unwrap();
+        // 真实日志的行形是 {"payload":{"rate_limits":{...}}}，夹具里存的是内层对象，
+        // 所以要按真实形状包一层再喂给读取器。
+        let line = serde_json::to_string(&json!({ "payload": { "rate_limits": first } })).unwrap();
         let scan = parse_tail(&format!("{line}\n"));
         let got = scan.found.expect("真实 payload 应可解析");
         assert_eq!(got.limit_id, "codex");
