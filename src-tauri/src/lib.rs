@@ -65,12 +65,17 @@ fn fallback_config_dir() -> std::path::PathBuf {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::AppleScript,
-            None,
-        ))
+    let base = tauri::Builder::default().plugin(tauri_plugin_notification::init());
+
+    // autostart 插件在 android/ios 目标上没有 Rust API（实测安卓编译报
+    // unresolved import ManagerExt、cannot find init），只能桌面端注册。
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let base = base.plugin(tauri_plugin_autostart::init(
+        tauri_plugin_autostart::MacosLauncher::AppleScript,
+        None,
+    ));
+
+    let builder = base
         .setup(|app| {
             let dir = app
                 .path()

@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tauri::{AppHandle, Emitter as _, Manager};
-use tauri_plugin_autostart::ManagerExt as AutostartExt;
 use tauri_plugin_notification::NotificationExt;
 
 use crate::engine::evaluate;
@@ -253,6 +252,39 @@ pub async fn crr_check(
     Ok(result)
 }
 
+/// 开机自启只在桌面端存在：autostart 插件在 android/ios 目标上整套 Rust API 都被
+/// cfg 掉了（实测安卓编译报 unresolved import / cannot find init）。
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn apply_autostart(app: &AppHandle, enable: bool) {
+    use tauri_plugin_autostart::ManagerExt as AutostartExt;
+    if enable {
+        let _ = app.autolaunch().enable();
+    } else {
+        let _ = app.autolaunch().disable();
+    }
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn apply_autostart(_app: &AppHandle, _enable: bool) {}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn minimize_window(window: &tauri::WebviewWindow) -> std::result::Result<(), String> {
+    window.minimize().map(|_| ()).map_err(|e| e.to_string())
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn minimize_window(_window: &tauri::WebviewWindow) -> std::result::Result<(), String> {
+    Err("该平台没有最小化".to_string())
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+fn restore_window(window: &tauri::WebviewWindow) {
+    let _ = window.unminimize();
+}
+
+#[cfg(any(target_os = "android", target_os = "ios"))]
+fn restore_window(_window: &tauri::WebviewWindow) {}
+
 #[tauri::command]
 pub fn crr_get_settings(state: tauri::State<'_, Shared>) -> Settings {
     lock(&state).settings.clone()
@@ -271,11 +303,7 @@ pub fn crr_set_settings(
         guard.store.save_settings(&clean)?;
     }
     let enable = lock(&state).settings.autostart;
-    if enable {
-        let _ = app.autolaunch().enable();
-    } else {
-        let _ = app.autolaunch().disable();
-    }
+    apply_autostart(&app, enable);
     let mut guard = lock(&state);
     let reloaded = guard.store.load_settings();
     guard.settings = reloaded.clone();
@@ -299,11 +327,11 @@ pub fn crr_window(app: AppHandle, action: String) -> std::result::Result<bool, A
         "hide" => window.hide().is_ok(),
         "show" => {
             let shown = window.show().is_ok();
-            let _ = window.unminimize();
+            restore_window(&window);
             let _ = window.set_focus();
             shown
         }
-        "minimize" => window.minimize().is_ok(),
+        "minimize" => minimize_window(&window).is_ok(),
         other => return Err(AppError::Args(format!("未知的窗口动作：{other}"))),
     };
     Ok(ok)
