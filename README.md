@@ -94,5 +94,9 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 - **开机自启只在桌面端有效**：`tauri-plugin-autostart` 的 Rust API（`ManagerExt`/`MacosLauncher`/`init`）在 android/ios 目标上根本不存在，实测安卓编译会直接报错，所以移动端不注册该插件，设置页里的自启开关在手机上自动隐藏，而不是灰着骗人。同理 `WebviewWindow::minimize/unminimize` 也只存在于桌面端。
 - **没有自建推送服务**：推送依赖 ntfy.sh / Bark 这类公共服务，且 iOS 推送最终仍经 APNs，公共免费通道有频率上限。
 - **iOS 真机安装**：CI 产出的是**未签名 `.ipa`**（`tauri ios build --no-sign`），需用 SideStore/AltStore 以免费 Apple ID 重签后安装，免费账号 7 天过期需续签；付费开发者账号可延长到 1 年。
+  已核对 v0.1.0 的 ipa 内容：可执行文件头是 `cffaedfe` + cputype `0100000c`（**arm64 真机，不是模拟器**），
+  `Info.plist` 里 `CFBundleIdentifier=top.lain42.codexreset`、`DTPlatformName=iPhoneOS`、
+  `UIRequiredDeviceCapabilities` 含 `arm64`，且不含 `embedded.mobileprovision`（未签名的预期结果）。
+  复核方式：下载 ipa → `unzip` → 读 `Payload/*.app/<executable>` 前 8 字节与 `Info.plist` 字符串表。
 - 追踪器是第三方页面，结构会变。`source-drift.yml` 每天跑一次探针，红了就说明解析器要改。
 
