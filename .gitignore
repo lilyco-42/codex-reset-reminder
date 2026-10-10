@@ -1,6 +1,7 @@
 /target/
 **/target/
 node_modules/
+package-lock.json
 .probe-report.json
 probe-report.json
 .DS_Store

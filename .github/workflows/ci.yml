@@ -134,6 +134,15 @@ jobs:
           echo "使用 NDK: $found"
       - name: 添加 Android Rust 目标
         run: rustup target add aarch64-linux-android
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: 安装 tauri CLI
+        # Tauri 生成的 gradle 里 rustBuild<Abi> 任务会执行 `npm run tauri`，
+        # 所以安卓车道必须有本地 CLI，不能像桌面那样只用 npx。
+        run: npm install --no-audit --no-fund
+      - name: 确认 npm run tauri 可用
+        run: npm run tauri -- --version
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: src-tauri

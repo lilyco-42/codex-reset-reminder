@@ -47,11 +47,16 @@ Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
 ## 本地开发
 
 ```bash
+npm install          # 只装 @tauri-apps/cli 一个开发依赖
 npm run dev          # tauri dev
 npm run test         # cargo test --locked
 npm run probe        # 校验线上数据源结构
 npm run icon         # 从 src-tauri/app-icon.png 重新生成图标集
 ```
+
+安卓车道必须走 `npm run tauri`：Tauri 生成的 gradle 里 `rustBuild<Abi>` 任务
+直接调用 `npm run tauri`，所以 `package.json` 里必须有 `tauri` 脚本和本地 CLI
+（桌面车道仍然用 `npx --yes @tauri-apps/cli@2`，不依赖 node_modules）。
 
 ## 构建与发布
 
