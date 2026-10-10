@@ -31,16 +31,19 @@ Codex 额度重置提醒器。盯三件事：本机 5 小时/每周额度窗口�
 | Linux | `Codex Reset Reminder_0.1.0_amd64.deb` | Debian/Ubuntu x86_64 |
 | Linux | `Codex Reset Reminder_0.1.0_amd64.AppImage` | 免安装，同目录合计约 83 MB |
 | macOS | `Codex Reset Reminder_0.1.0_aarch64.dmg` | **仅 Apple Silicon**（runner 是 arm64），约 2.4 MB |
-| Android | `app-universal-debug.apk` | 11.25 MB，debug 签名，可直接侧载 |
+| Android | `app-universal-debug.apk` | APK 本体 24 968 467 B（装进 CI 附件 zip 后 11 247 080 B），debug 签名，可直接侧载 |
 | iOS | 见下方附件 | **未签名 `.ipa`**，需 SideStore/AltStore 以免费 Apple ID 重签（7 天到期续签） |
 
 Android 文件名是 `universal`，但 CI 只编了 `aarch64` 一个 Rust 目标，
-所以里面实际只有 arm64-v8a 的 .so；其它 ABI 装上也跑不起来。
+实测解压后 `lib/` 下只有 `arm64-v8a/` 一个目录；其它 ABI 装上也跑不起来。
 需要全 ABI 就把 CI 里的 `--target aarch64` 去掉。
+编译后的二进制 `AndroidManifest.xml` 里已确认含
+`android.permission.POST_NOTIFICATIONS`（CI 注入生效）。
 
-Windows 合计约 3.89 MB，macOS 约 2.36 MB，Linux 合计约 83.65 MB。
+各附件的准确体积以下方 Assets 列表为准（由 CI 上传，不是手写）。
 macOS 只有 Apple Silicon 版（runner 是 arm64），Intel 版需要在 CI 里
 加 `--target x86_64-apple-darwin` 或做 universal 构建。
+Linux 附件较大（zip 约 83 MB，主要是 AppImage）。
 
 ## 已知限制
 
