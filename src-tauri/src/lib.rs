@@ -12,7 +12,7 @@ use std::sync::Mutex;
 
 use tauri::Manager;
 
-use crate::commands::{Inner, Shared};
+use crate::commands::Inner;
 use crate::store::Store;
 
 const IS_DESKTOP: bool = !cfg!(any(target_os = "android", target_os = "ios"));

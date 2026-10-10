@@ -233,7 +233,7 @@ pub async fn crr_check(
     errors.append(&mut push_errors);
 
     let result = {
-        let mut guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
+        let guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
         if let Err(e) = guard.store.save_state(&guard.state) {
             errors.push(format!("状态落盘：{e}"));
         }

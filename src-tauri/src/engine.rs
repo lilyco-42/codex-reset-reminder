@@ -124,20 +124,19 @@ fn window_rules(
 
 fn tracker_rules(e: &mut Emitter, cfg: &Settings, tracker: &[TrackerEvent], now_ms: i64, tz: i64) {
     const DAY_MS: i64 = 86_400_000;
-    if !e.state.seeded {
-        // 首轮只登记历史，避免一次弹出几十条旧重置。
+    let seeding = !e.state.seeded;
+    if seeding {
         e.state.seeded = true;
-        for ev in tracker {
-            let id = ev.id();
-            if !e.state.seen_tracker.contains(&id) {
-                e.state.seen_tracker.push(id);
-            }
-        }
-        return;
     }
     for ev in tracker {
         let id = ev.id();
         if e.state.seen_tracker.contains(&id) {
+            continue;
+        }
+        // 首轮只登记一天之前的历史：刚装上就弹二十几条旧重置没有意义，
+        // 但一天内真的发生过的新重置仍然要提醒，否则等于漏报。
+        if seeding && ev.ts_ms < now_ms - DAY_MS {
+            e.state.seen_tracker.push(id);
             continue;
         }
         let want = if ev.is_confirmed() {
@@ -469,6 +468,22 @@ mod tests {
         assert!(r.to_fire.is_empty(), "首轮只登记历史，不应弹窗");
         assert!(st.seeded);
         assert_eq!(st.seen_tracker.len(), 28, "28 条都应被登记");
+    }
+
+    #[test]
+    fn first_run_still_notifies_a_reset_from_the_last_day() {
+        let cfg = Settings::default();
+        let mut st = RunState::default();
+        let fresh = ev("confirmed", "2026-10-10T12:00:00.000Z", NOW - 3_600_000);
+        let old = ev(
+            "confirmed",
+            "2026-06-29T00:00:00.000Z",
+            NOW - 100 * 86_400_000,
+        );
+        let r = run(&cfg, NOW, None, &[old, fresh], None, &mut st);
+        assert_eq!(r.to_fire.len(), 1, "只应报一天内这条，更早的仍被吞掉");
+        assert_eq!(r.to_fire[0].title, "全局额度重置已确认");
+        assert_eq!(st.seen_tracker.len(), 2, "两条都应登记，不能重复报");
     }
 
     #[test]

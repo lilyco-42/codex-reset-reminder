@@ -117,17 +117,30 @@ jobs:
           ls "${ANDROID_HOME:-/none}/platforms" 2>/dev/null || true
       - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
-          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
+      - name: 确认 NDK（Rust 链接 Android 目标必需）
+        run: |
+          found=""
+          for v in "${ANDROID_NDK_HOME:-}" "${ANDROID_NDK_LATEST_HOME:-}" "${NDK_HOME:-}"; do
+            [ -n "$v" ] && [ -d "$v" ] && found="$v" && break
+          done
+          if [ -z "$found" ]; then
+            echo "runner 上没有 NDK，用 sdkmanager 安装"
+            sdkmanager "ndk;27.2.12479018" >/dev/null 2>&1 || sdkmanager "ndk;26.1.10909125"
+            found="${ANDROID_HOME:-$HOME/android-sdk}/ndk"
+            found=$(ls -d "$found"/* | head -1)
+          fi
+          echo "NDK_HOME=$found" >> "$GITHUB_ENV"
+          echo "使用 NDK: $found"
       - name: 添加 Android Rust 目标
-        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+        run: rustup target add aarch64-linux-android
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: src-tauri
       - name: 生成 Android 工程
         run: ${{ env.CLI }} android init --ci
       - name: 构建 debug APK（可直接侧载）
-        working-directory: .
-        run: ${{ env.CLI }} android build --apk --debug
+        run: ${{ env.CLI }} android build --apk --debug --target aarch64
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ env.APP }}-android-debug
