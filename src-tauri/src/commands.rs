@@ -4,7 +4,6 @@ use std::time::Duration;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter as _, Manager};
 use tauri_plugin_autostart::ManagerExt as AutostartExt;
-use tauri_plugin_http::reqwest;
 use tauri_plugin_notification::NotificationExt;
 
 use crate::engine::evaluate;

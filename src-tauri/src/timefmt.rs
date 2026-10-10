@@ -204,7 +204,8 @@ mod tests {
 
     #[test]
     fn quiet_window_wraps_past_midnight() {
-        let cfg = Settings::default();
+        let mut cfg = Settings::default();
+        cfg.quiet_hours = true;
         assert!(cfg.quiet_start == 23 && cfg.quiet_end == 7);
         assert!(
             in_quiet_for(&cfg, 1_791_644_400_000, 480),

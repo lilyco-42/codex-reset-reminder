@@ -80,6 +80,11 @@ fn pick_rate_limits(v: &Value) -> Option<RateLimits> {
     let rl = payload
         .get("rate_limits")
         .or_else(|| payload.get("info")?.get("rate_limits"))?;
+    // 全字段 serde(default) 会让空数组也被当成结构体解出来，
+    // 于是"结构不符"被吞成"读到了但没额度"，这里先卡住必须是对象。
+    if !rl.is_object() {
+        return None;
+    }
     serde_json::from_value::<RateLimits>(rl.clone()).ok()
 }
 
@@ -98,11 +103,15 @@ pub struct TailScan {
 pub fn parse_tail(text: &str) -> TailScan {
     let mut scan = TailScan::default();
     let lines: Vec<&str> = text.split('\n').filter(|l| !l.trim().is_empty()).collect();
-    if lines.len() > 1 {
+    // 先掐掉可能被截断的首行，再倒序；写成 rev().skip(1) 会跳掉最新的那几行，
+    // 于是把过期额度当成本轮读数。
+    let body: &[&str] = if lines.len() > 1 {
         scan.dropped_partial = 1;
-    }
-    let drop = scan.dropped_partial;
-    for line in lines.iter().rev().skip(drop) {
+        &lines[1..]
+    } else {
+        &lines[..]
+    };
+    for line in body.iter().rev() {
         if !line.contains("rate_limits") {
             continue;
         }
@@ -228,8 +237,22 @@ mod tests {
         let scan = parse_tail(&text);
         let got = scan.found.expect("应解析出额度");
         assert_eq!(got.primary.expect("primary").used_percent, 77.0);
-        assert_eq!(scan.marked, 2, "两条都应被标记命中");
-        assert_eq!(scan.parsed, 1, "只有最后一条被真正解析就够");
+        assert_eq!(scan.marked, 1, "命中最新一条就应停止，不继续翻旧数据");
+        assert_eq!(scan.parsed, 1);
+    }
+
+    #[test]
+    fn newest_line_without_markers_is_skipped_and_the_older_one_is_used() {
+        // 反向遍历的正向对照：最新一行没有额度字段时，要退到上一行，而不是读成空。
+        let text = format!(
+            "{}\n{}\n",
+            line(rl(21.0, 555, 300)),
+            r#"{"timestamp":"2026-10-10T13:00:00.000Z","payload":{"type":"other"}}"#
+        );
+        let scan = parse_tail(&text);
+        let got = scan.found.expect("应退到上一行");
+        assert_eq!(got.primary.expect("primary").resets_at, 555);
+        assert_eq!(scan.marked, 1);
     }
 
     #[test]
@@ -267,6 +290,9 @@ mod tests {
         let raw = include_str!("../tests/fixtures/rate_limits_live.json");
         let v: Value = serde_json::from_str(raw).expect("fixture 必须是合法 JSON");
         let first = v["blocks"][0]["rate_limits"].clone();
+        assert!(first.is_object(), "夹具第一块应为对象，实际 {first}");
+        let direct = serde_json::from_value::<RateLimits>(first.clone());
+        assert!(direct.is_ok(), "结构体与真实字段不匹配：{:?}", direct.err());
         let line = serde_json::to_string(&json!({ "payload": first })).unwrap();
         let scan = parse_tail(&format!("{line}\n"));
         let got = scan.found.expect("真实 payload 应可解析");
@@ -275,5 +301,25 @@ mod tests {
         assert_eq!(p.window_minutes, 300);
         assert_eq!(p.resets_at, 1_791_650_325, "应与本机实测值一致");
         assert_eq!(got.credits.expect("credits").balance, "0");
+    }
+
+    #[test]
+    fn every_distinct_live_block_round_trips() {
+        // 真实日志里出现过 11 种不同的额度快照，全部都要能读，不能只测第一条。
+        let raw = include_str!("../tests/fixtures/rate_limits_live.json");
+        let v: Value = serde_json::from_str(raw).unwrap();
+        let blocks = v["blocks"].as_array().expect("blocks 应为数组");
+        assert!(
+            blocks.len() >= 10,
+            "夹具应覆盖多个不同快照，实际 {}",
+            blocks.len()
+        );
+        for (i, b) in blocks.iter().enumerate() {
+            let rl = &b["rate_limits"];
+            let parsed = serde_json::from_value::<RateLimits>(rl.clone());
+            assert!(parsed.is_ok(), "第 {i} 块读不出来：{:?}", parsed.err());
+            let p = parsed.expect("已确认成功");
+            assert!(!p.limit_id.is_empty(), "第 {i} 块缺 limit_id");
+        }
     }
 }

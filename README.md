@@ -24,6 +24,8 @@ Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
 3. **codex-reset.com/api/status**（JSON）
    - 实测字段：`indicator` `description` `codex` `degraded` `incident_count` `checked_at`。
    - 注意：`indicator` 可以是 `minor` 而 `degraded=false`、`incident_count=0`，所以**故障判据不看 indicator**，只看 `degraded || incident_count>0 || codex!="operational"`。这条判断有专门的回归测试（`minor_indicator_alone_is_not_an_incident`）。
+   - 实测该接口会限流：返回 200 + `{"error":...,"retry_after":...}`。若按结构体直接反序列化，`serde(default)` 会把它读成"全部正常"，所以解析前先看原始 JSON 形状（回归测试 `rate_limited_error_body_is_never_read_as_healthy`）。
+   - 实测 `Cache-Control: public, max-age=120`，且首页 brotli 后 152 KB（不压缩 999 KB），因此 reqwest 开了 `gzip`+`brotli`，默认轮询间隔 15 分钟。
 
 ## 提醒规则
 

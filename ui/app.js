@@ -61,6 +61,10 @@
     const used = Math.max(0, Math.min(100, Number(w.used_percent) || 0));
     const resetMs = Number(w.resets_at) * 1000;
     const soon = resetMs > Date.now() && resetMs - Date.now() <= 15 * 60000;
+    const local = fmt(resetMs);
+    const bj = fmt(resetMs, "Asia/Shanghai");
+    // 设备本身就是东八区时，不必把同一个时间印两遍。
+    const when = local === bj ? `${local}（北京时间）` : `本机 ${local} · 北京 ${bj}`;
     return `
       <div class="win">
         <div class="win-top">
@@ -70,7 +74,7 @@
         <div class="bar"><i style="width:${used}%"></i></div>
         <div class="win-foot">
           <span data-reset="${resetMs}">${countdown(resetMs)}</span>
-          <span class="meta">本机 ${fmt(resetMs)} · 北京 ${fmt(resetMs, "Asia/Shanghai")}</span>
+          <span class="meta">${when}</span>
         </div>
         ${soon ? '<p class="tag">即将重置</p>' : ""}
       </div>`;
@@ -138,7 +142,9 @@
     const trouble = s.degraded || s.incident_count > 0 || (s.codex && s.codex !== "operational");
     $("status-text").textContent = trouble ? (s.degraded ? "服务降级" : "需要关注") : "正常";
     $("status-text").className = "big " + (trouble ? "warn" : "ok");
-    $("status-meta").textContent = `${s.description || s.indicator} · codex ${s.codex || "未知"} · 事件 ${s.incident_count || 0} 条`;
+    $("status-meta").textContent = `${s.description || s.indicator || "无描述"} · codex ${
+      s.codex || "未知"
+    } · 事件 ${s.incident_count || 0} 条`;
   }
 
   function renderAlerts(r) {
@@ -234,7 +240,7 @@
       return Number.isFinite(v) ? Math.round(v) : d;
     };
     return {
-      poll_minutes: n("poll", 5),
+      poll_minutes: n("poll", 15),
       warn_percent: n("warn", 80),
       critical_percent: n("crit", 95),
       reset_soon_minutes: n("soon", 15),

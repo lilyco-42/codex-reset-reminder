@@ -176,7 +176,9 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            poll_minutes: 5,
+            // 实测 codex-reset.com/api/status 的 Cache-Control 是 max-age=120，
+            // 且首页压缩后仍有 152 KB，所以默认 15 分钟一轮，不追着服务器打。
+            poll_minutes: 15,
             warn_percent: 80.0,
             critical_percent: 95.0,
             reset_soon_minutes: 15,
