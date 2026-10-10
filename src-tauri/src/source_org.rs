@@ -125,4 +125,56 @@ mod tests {
         assert_eq!(e.source_url.as_deref(), Some("https://x.com/a&b"));
         assert_eq!(e.ts_ms, 1_791_344_109_000);
     }
+
+    #[test]
+    fn parses_the_whole_real_page_not_just_a_hand_picked_slice() {
+        // 37 个节点是抓取实测数量（28 confirmed + 9 post），
+        // 只测 3 个节点的代表性不够：真实页面里属性顺序和取值范围都有差异。
+        let html = include_str!("../tests/fixtures/timeline_all_nodes.html").to_string();
+        let raw = include_str!("../tests/fixtures/timeline_all_expected.json");
+        let want: serde_json::Value = serde_json::from_str(raw).unwrap();
+        let want = want.as_array().unwrap();
+        assert_eq!(want.len(), 37, "夹具本身应与抓取一致");
+
+        let events = parse_tracker(&html);
+        assert_eq!(events.len(), 37, "37 个节点应全部解出来");
+        assert_eq!(
+            events.iter().filter(|e| e.is_confirmed()).count(),
+            28,
+            "confirmed 数量应与实测一致"
+        );
+        assert_eq!(
+            events.iter().filter(|e| e.kind == "post").count(),
+            9,
+            "post 数量应与实测一致"
+        );
+        assert!(
+            events.iter().all(|e| e.source_url.is_some()),
+            "实测每个节点都带来源链接"
+        );
+        assert!(
+            events.windows(2).all(|w| w[0].ts_ms >= w[1].ts_ms),
+            "必须按时间倒序"
+        );
+        assert_eq!(events[0].date_time, "2026-10-07T03:35:09.000Z");
+        assert_eq!(events[0].kind, "confirmed");
+
+        // 逐条比对，防止只对上数量却对不上内容。
+        let mut want_sorted: Vec<&serde_json::Value> = want.iter().collect();
+        want_sorted.sort_by(|a, b| {
+            b["datetime"]
+                .as_str()
+                .unwrap_or("")
+                .cmp(a["datetime"].as_str().unwrap_or(""))
+        });
+        for (got, w) in events.iter().zip(want_sorted.iter()) {
+            assert_eq!(got.date_time, w["datetime"].as_str().unwrap());
+            assert_eq!(got.kind, w["kind"].as_str().unwrap());
+            assert_eq!(
+                got.source_url.as_deref(),
+                w["source_url"].as_str(),
+                "来源链接要逐条对上"
+            );
+        }
+    }
 }
