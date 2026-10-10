@@ -322,7 +322,8 @@ label {
   color: var(--text);
 }
 
-input[type="number"] {
+input[type="number"],
+input[type="text"] {
   font: inherit;
   background: #0f1115;
   color: var(--text);

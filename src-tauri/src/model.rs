@@ -168,6 +168,9 @@ pub struct Settings {
     pub notify_tracker_post: bool,
     pub notify_status_incident: bool,
     pub autostart: bool,
+    /// ntfy topic 或 Bark 地址；填了就把同样的提醒再推一份到手机，
+    /// 这样 iPhone 不需要让 App 常驻也能收到。
+    pub push_url: String,
 }
 
 impl Default for Settings {
@@ -185,6 +188,7 @@ impl Default for Settings {
             notify_tracker_post: false,
             notify_status_incident: true,
             autostart: true,
+            push_url: String::new(),
         }
     }
 }

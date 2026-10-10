@@ -66,6 +66,18 @@
             <label><input type="checkbox" id="s-status" />提醒服务异常</label>
             <label><input type="checkbox" id="s-autostart" />开机自动启动</label>
           </div>
+          <label
+            >推送到手机（可选，ntfy topic 或 Bark 地址，必须 https）
+            <input
+              type="text"
+              id="s-push"
+              placeholder="https://ntfy.sh/你的topic 或 https://api.day.app/你的key"
+            />
+          </label>
+          <p class="hint">
+            填了之后，桌面端检查出的提醒会同时推到手机，iPhone 不需要让 App 常驻；
+            没填就只发本机通知。
+          </p>
           <div class="form-actions">
             <button type="submit">保存设置</button>
             <button type="button" id="s-reset">清空提醒记录</button>

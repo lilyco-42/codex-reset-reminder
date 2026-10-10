@@ -148,33 +148,20 @@ jobs:
           workspaces: src-tauri
       - name: 生成 iOS 工程
         run: ${{ env.CLI }} ios init --ci
-      - name: 读取生成的 scheme 名
-        id: scheme
+      - name: 构建未签名 ipa（供 SideStore/AltStore 用免费 Apple ID 重签）
+        run: ${{ env.CLI }} ios build --no-sign
+      - name: 收集 ipa
         run: |
-          PROJECT=$(find src-tauri/gen/apple -maxdepth 1 -name '*.xcodeproj' | head -1)
-          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
-          SCHEME=$(xcodebuild -list -json -project "$PROJECT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log((j.project.schemes||[])[0]||"")})')
-          echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
-          echo "project=$PROJECT scheme=$SCHEME"
-      - name: 为模拟器构建（不签名，验证 Rust/Swift 胶水能编过）
-        run: |
-          xcodebuild -project "${{ steps.scheme.outputs.project }}" \
-            -scheme "${{ steps.scheme.outputs.scheme }}" \
-            -sdk iphonesimulator -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO build
-      - name: 收集 .app
-        run: |
-          APP=$(find "$RUNNER_TEMP/Build/Products" -maxdepth 1 -name '*.app' | head -1)
-          if [ -z "$APP" ]; then
-            APP=$(find ~/Library/Developer/Xcode/DerivedData -name '*.app' -path '*iphonesimulator*' | head -1)
-          fi
-          echo "found=$APP"
-          test -n "$APP"
-          mkdir -p out && cp -R "$APP" out/
+          IPA=$(find src-tauri/gen/apple -name '*.ipa' | head -1)
+          echo "ipa=$IPA"
+          test -n "$IPA"
+          mkdir -p out
+          cp "$IPA" out/
+          ls -l out
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.APP }}-ios-simulator
-          path: out/*.app
+          name: ${{ env.APP }}-ios-unsigned
+          path: out/*.ipa
           if-no-files-found: error
 
   release:

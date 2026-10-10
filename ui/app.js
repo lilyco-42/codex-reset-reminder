@@ -225,6 +225,7 @@
     $("s-post").checked = !!s.notify_tracker_post;
     $("s-status").checked = !!s.notify_status_incident;
     $("s-autostart").checked = !!s.autostart;
+    $("s-push").value = s.push_url || "";
   }
 
   function formToSettings() {
@@ -245,6 +246,7 @@
       notify_tracker_post: $("s-post").checked,
       notify_status_incident: $("s-status").checked,
       autostart: $("s-autostart").checked,
+      push_url: $("s-push").value.trim(),
     };
   }
 

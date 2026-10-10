@@ -59,9 +59,31 @@ npm run icon         # 从 src-tauri/app-icon.png 重新生成图标集
 - `check` 故意放在矩阵前面：Rust API 名字写错只花几分钟，不会烧掉四平台矩阵。
 - 所有 action 按 commit SHA 固定，SHA 由 `gh api repos/<owner>/<repo>/commits/<tag>` 解析并逐个验证过。
 
+## 预研结论（build vs buy）
+
+| 项目 | ★ | 许可 | 为什么没直接用 |
+| --- | --- | --- | --- |
+| `zangzi2018/quota-pool-for-codex` | 101 | AGPL-3.0 | Swift+C# 自建控制台，要自己跑服务器（Swift 208 KB / C# 64 KB 代码量实测） |
+| `deLiseLINO/codex-quota` | 83 | MIT | Go 终端程序，只有桌面 |
+| `Vincent-hechuan/codex-quota-band` | 38 | MIT | 推到小米手环，不是手机 App |
+| `DiMY-CN/CodexQuotaMonitor` | 12 | 无许可 | 仅 Windows WPF；无许可=默认保留全部权利，不能取用 |
+| `HoshinoSuzumi/codex-quota-reset-notifier` | 0 | 无许可 | 思路可借鉴（Bark 推送），代码不可取用 |
+
+自研的理由是**具名硬约束**：单栈覆盖 Win/Linux/macOS/Android/iOS + 零自建服务器 + 与自有客户端一致的 AGPL。
+借鉴的两点：Bark/ntfy 推送通道、以及"读会话日志而不是猜额度"的做法。
+
+注：`gh search code` 在本机环境对已知存在的符号也返回空（正向对照失败），所以"没有代码级先例"这个判断不成立，只是工具不可用。
+
+## 手机怎么收到提醒
+
+iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 APNs，所以**不靠手机常驻**：
+桌面端跑引擎，命中提醒时同时 POST 到你填的 ntfy topic 或 Bark 地址（设置里 `push_url`，必须 https）。
+手机装免费的 ntfy / Bark App 订阅即可，不需要服务器、不需要 Apple 开发者账号。
+
 ## 已知边界
 
-- **移动端读不到本机额度**：iOS/Android 没有 `~/.codex` 会话日志，界面会明确标注，只显示全局重置与服务状态。要让手机看到个人额度，需要桌面端把快照上报给自己的服务再推给手机（`new-api` 里已有 `FetchCodexWhamRateLimitResetCredits` 可复用）。
-- **没有服务端推送**：提醒依赖应用进程存活（桌面端关窗口只是隐藏到托盘）。真正的离线推送需要 APNs/FCM 加一台服务器。
-- **iOS 真机分发**：需要 Apple 账号签名；免费账号走 AltStore/SideStore 自签，7 天需重签。CI 默认只构建未签名模拟器包，用来证明 Rust/Swift 胶水能编过。
+- **移动端读不到本机额度**：iOS/Android 没有 `~/.codex` 会话日志，界面会明确标注，只显示全局重置与服务状态；个人额度靠桌面端转发推送。
+- **没有自建推送服务**：推送依赖 ntfy.sh / Bark 这类公共服务，且 iOS 推送最终仍经 APNs，公共免费通道有频率上限。
+- **iOS 真机安装**：CI 产出的是**未签名 `.ipa`**（`tauri ios build --no-sign`），需用 SideStore/AltStore 以免费 Apple ID 重签后安装，免费账号 7 天过期需续签；付费开发者账号可延长到 1 年。
 - 追踪器是第三方页面，结构会变。`source-drift.yml` 每天跑一次探针，红了就说明解析器要改。
+

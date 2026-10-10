@@ -2,8 +2,8 @@
 // 用法：node scripts/probe-sources.mjs
 import { writeFileSync } from "node:fs";
 
-const TRACKER = "https://codexreset.org";
-const STATUS = "https://codex-reset.com/api/status";
+const TRACKER = process.env.CRR_TRACKER || "https://codexreset.org";
+const STATUS = process.env.CRR_STATUS || "https://codex-reset.com/api/status";
 const UA = "codex-reset-reminder-probe/0.1";
 
 const failures = [];
@@ -14,10 +14,23 @@ function check(ok, label, detail) {
   else failures.push(`FAIL ${label}${detail ? ` (${detail})` : ""}`);
 }
 
-async function getText(url) {
-  const res = await fetch(url, { headers: { "user-agent": UA } });
-  if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
-  return res.text();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// 单次网络抖动不该把车道判红（本机代理还会伪造故障），但结构变化必须稳定判红，
+// 所以只重试传输层错误，不重试解析断言。
+async function getText(url, attempts = 3) {
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: { "user-agent": UA } });
+      if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+      return await res.text();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await sleep(2000 * (i + 1));
+    }
+  }
+  throw lastErr;
 }
 
 // 1) 追踪器：必须有带 data-datetime / data-kind 的时间线节点，且含 confirmed

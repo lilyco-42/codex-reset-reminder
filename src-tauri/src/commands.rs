@@ -31,28 +31,93 @@ pub struct Inner {
 
 pub type Shared = Mutex<Inner>;
 
-fn notification_id(key: &str) -> i64 {
+fn notify_id(key: &str) -> i32 {
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in key.as_bytes() {
         h ^= *b as u64;
         h = h.wrapping_mul(0x0000_0100_0000_01b3);
     }
-    (h & 0x7fff_ffff_ffff_ffff) as i64
+    // 插件侧是 i32 标识，这里折一次保证落在正数区间。
+    ((h & 0x7fff_ffff) | 1) as i32
 }
 
-fn fire(app: &AppHandle, alerts: &[crate::model::Alert]) {
+/// 判定推送地址格式：Bark 走 JSON，其余（ntfy 等）走纯文本 + Title 头。
+fn push_kind(url: &str) -> Option<&'static str> {
+    let u = url.trim();
+    if u.is_empty() {
+        return None;
+    }
+    if !u.starts_with("https://") {
+        return Some("rejected");
+    }
+    if u.contains("api.day.app") {
+        Some("bark")
+    } else {
+        Some("plain")
+    }
+}
+
+async fn push_remote(url: &str, title: &str, body: &str) -> std::result::Result<(), String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .user_agent(UA)
+        .build()
+        .map_err(|e| e.to_string())?;
+    let kind = push_kind(url).ok_or("未配置推送地址")?;
+    // 插件的 reqwest 没有开 json feature，这里自己序列化 body，不去动 feature 图。
+    let resp = match kind {
+        "bark" => {
+            let payload = serde_json::to_vec(&serde_json::json!({ "title": title, "body": body }))
+                .map_err(|e| e.to_string())?;
+            client
+                .post(url)
+                .header("Content-Type", "application/json")
+                .body(payload)
+                .send()
+                .await
+        }
+        "plain" => {
+            client
+                .post(url)
+                .header("Title", title)
+                .header("Priority", "4")
+                .body(format!("{title}\n{body}"))
+                .send()
+                .await
+        }
+        _ => return Err("推送地址必须是 https://".to_string()),
+    }
+    .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("推送服务返回 {}", resp.status()));
+    }
+    Ok(())
+}
+
+async fn fire(
+    app: &AppHandle,
+    alerts: &[crate::model::Alert],
+    push_url: Option<&str>,
+) -> Vec<String> {
+    let mut errors = Vec::new();
     for a in alerts {
         if let Err(e) = app
             .notification()
             .builder()
             .title(a.title.as_str())
             .body(a.body.as_str())
-            .notification_id(notification_id(&a.key))
+            .id(notify_id(&a.key))
             .show()
         {
-            eprintln!("[crr] 通知发送失败：{e}");
+            errors.push(format!("本机通知：{e}"));
+        }
+        if let Some(url) = push_url {
+            if let Err(e) = push_remote(url, &a.title, &a.body).await {
+                errors.push(format!("远程推送：{e}"));
+            }
         }
     }
+    errors
 }
 
 async fn get_text(url: &str) -> Result<String> {
@@ -143,10 +208,11 @@ pub async fn crr_check(
         }
     };
 
-    let report = {
+    let (report, push_target) = {
         let mut guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
         let cfg = guard.settings.clone();
-        evaluate(
+        let push = cfg.push_url.clone();
+        let r = evaluate(
             &cfg,
             now_ms,
             tz_offset_minutes,
@@ -154,10 +220,17 @@ pub async fn crr_check(
             &tracker,
             status.as_ref(),
             &mut guard.state,
-        )
+        );
+        (r, push)
     };
 
-    fire(&app, &report.to_fire);
+    let target = if push_target.trim().is_empty() {
+        None
+    } else {
+        Some(push_target.trim().to_string())
+    };
+    let mut push_errors = fire(&app, &report.to_fire, target.as_deref()).await;
+    errors.append(&mut push_errors);
 
     let result = {
         let mut guard = state.lock().map_err(|e| AppError::Io(e.to_string()))?;
@@ -194,7 +267,7 @@ pub fn crr_set_settings(
 ) -> std::result::Result<Settings, AppError> {
     {
         let mut guard = lock(&state);
-        let clean = clamp_settings(settings);
+        let clean = clamp_settings(settings)?;
         guard.settings = clean.clone();
         guard.store.save_settings(&clean)?;
     }
@@ -250,7 +323,7 @@ pub fn crr_platform(state: tauri::State<'_, Shared>) -> Value {
     })
 }
 
-fn clamp_settings(mut s: Settings) -> Settings {
+fn clamp_settings(mut s: Settings) -> Result<Settings> {
     if s.poll_minutes < 1 {
         s.poll_minutes = 1;
     }
@@ -269,7 +342,13 @@ fn clamp_settings(mut s: Settings) -> Settings {
     s.reset_soon_minutes = s.reset_soon_minutes.clamp(1, 240);
     s.quiet_start %= 24;
     s.quiet_end %= 24;
-    s
+    s.push_url = s.push_url.trim().to_string();
+    if !s.push_url.is_empty() && !s.push_url.starts_with("https://") {
+        return Err(AppError::Args(
+            "推送地址必须以 https:// 开头（ntfy topic 或 Bark 地址）".into(),
+        ));
+    }
+    Ok(s)
 }
 
 fn lock<'a>(state: &'a tauri::State<'_, Shared>) -> std::sync::MutexGuard<'a, Inner> {
@@ -284,12 +363,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ids_are_stable_and_positive() {
-        let a = notification_id("warn:每周:1:8");
-        let b = notification_id("warn:每周:1:8");
+    fn ids_are_stable_positive_and_fit_i32() {
+        let a = notify_id("warn:每周:1:8");
+        let b = notify_id("warn:每周:1:8");
         assert_eq!(a, b, "同一 key 必须映射到同一通知 id");
-        assert!(a >= 0);
-        assert_ne!(a, notification_id("warn:每周:1:9"));
+        assert!(a > 0, "id 必须是正数，插件用它做标识");
+        assert!(a <= i32::MAX);
+        assert_ne!(a, notify_id("warn:每周:1:9"));
+    }
+
+    #[test]
+    fn push_target_is_classified_and_https_only() {
+        assert_eq!(push_kind(""), None, "留空即关闭远程推送");
+        assert_eq!(
+            push_kind("https://ntfy.sh/my-codex"),
+            Some("plain"),
+            "ntfy 走纯文本 + Title 头"
+        );
+        assert_eq!(
+            push_kind("https://api.day.app/KEY123"),
+            Some("bark"),
+            "Bark 走 JSON"
+        );
+        assert_eq!(
+            push_kind("http://ntfy.local/x"),
+            Some("rejected"),
+            "明文 http 必须拒绝"
+        );
+        assert_eq!(push_kind("file:///etc/passwd"), Some("rejected"));
+    }
+
+    #[test]
+    fn saving_a_non_https_push_url_is_rejected_with_a_chinese_message() {
+        let bad = Settings {
+            push_url: "http://evil.example/x".into(),
+            ..Settings::default()
+        };
+        let e = clamp_settings(bad).expect_err("非 https 应报错");
+        assert!(e.to_string().contains("https://"), "错误文案要能看懂：{e}");
     }
 
     #[test]
@@ -301,14 +412,17 @@ mod tests {
             reset_soon_minutes: 999,
             quiet_start: 40,
             quiet_end: 24,
+            push_url: "  https://ntfy.sh/x  ".into(),
             ..Settings::default()
-        });
+        })
+        .expect("合法设置应通过");
         assert_eq!(s.poll_minutes, 1);
         assert_eq!(s.warn_percent, 80.0);
         assert!(s.critical_percent >= s.warn_percent);
         assert_eq!(s.reset_soon_minutes, 240);
         assert_eq!(s.quiet_start, 16);
         assert_eq!(s.quiet_end, 0);
+        assert_eq!(s.push_url, "https://ntfy.sh/x", "推送地址应被 trim");
     }
 
     #[test]
