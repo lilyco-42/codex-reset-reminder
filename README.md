@@ -8,7 +8,7 @@ Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
 | Windows | CI 构建 | NSIS `.exe` + `.msi` |
 | Linux | CI 构建 | `.deb` + `.AppImage` |
 | macOS | CI 构建 | `.dmg` |
-| Android | CI 构建 | debug `.apk`（仅 arm64-v8a 单 ABI，可直接侧载） |
+| Android | CI 构建 | `app-universal-debug.apk`（只编 aarch64 一个 Rust 目标，实际仅含 arm64-v8a，可直接侧载） |
 | iOS | 标签/手动触发构建 | **未签名 `.ipa`**，需 SideStore/AltStore 重签 |
 
 ## 三个数据源（都是实测出来的，不是猜的）
