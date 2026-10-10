@@ -303,6 +303,11 @@
       const p = await invoke("crr_platform");
       $("platform").textContent =
         `${p.os}/${p.arch}${p.mobile ? " · 移动端" : ""} · 配置目录 ${p.config_dir}`;
+      if (p.mobile) {
+        // 移动端没有开机自启这套 API，留着开关只会让人以为已经生效。
+        const lbl = $("lbl-autostart");
+        if (lbl) lbl.hidden = true;
+      }
       const local = await invoke("crr_local");
       renderWindows(local);
       renderMeta(local);
