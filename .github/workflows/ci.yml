@@ -189,12 +189,18 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [desktop, android]
+    # 等 ios 车道，但不被它卡住：ipa 是加分项，桌面包与 apk 成功就该出 Release。
+    needs: [desktop, android, ios]
+    if: >-
+      always() &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      needs.desktop.result == 'success' &&
+      needs.android.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist

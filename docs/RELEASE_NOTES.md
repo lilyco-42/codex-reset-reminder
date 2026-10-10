@@ -22,13 +22,20 @@ Codex 额度重置提醒器。盯三件事：本机 5 小时/每周额度窗口�
 
 ## 各平台产物
 
+以下文件名与体积取自 CI 实测输出（`Bundling ...` / `Running makensis to produce ...`）：
+
 | 平台 | 文件 | 说明 |
 | --- | --- | --- |
-| Windows | `*-windows-x64/*Setup*.exe`、`.msi` | NSIS + MSI |
-| Linux | `.deb`、`.AppImage` | x86_64 |
-| macOS | `.dmg` | |
-| Android | `*-android-debug/*.apk` | 仅 arm64-v8a，debug 签名，可直接侧载 |
-| iOS | `*-ios-unsigned/*.ipa` | **未签名**，需用 SideStore/AltStore 以免费 Apple ID 重签（7 天到期续签） |
+| Windows | `Codex Reset Reminder_0.1.0_x64-setup.exe` | NSIS 安装器 |
+| Windows | `Codex Reset Reminder_0.1.0_x64_en-US.msi` | MSI |
+| Linux | `Codex Reset Reminder_0.1.0_amd64.deb` | Debian/Ubuntu x86_64 |
+| Linux | `Codex Reset Reminder_0.1.0_amd64.AppImage` | 免安装，同目录合计约 83 MB |
+| macOS | `Codex Reset Reminder_0.1.0_aarch64.dmg` | **仅 Apple Silicon**（runner 是 arm64），约 2.4 MB |
+| Android | 见下方附件 | 仅 arm64-v8a，debug 签名，可直接侧载 |
+| iOS | 见下方附件 | **未签名 `.ipa`**，需 SideStore/AltStore 以免费 Apple ID 重签（7 天到期续签） |
+
+Windows 合计约 3.9 MB。macOS 与 Intel 版未产出，需要的话要在 CI 里加
+`--target x86_64-apple-darwin` 或换 universal 构建。
 
 ## 已知限制
 
