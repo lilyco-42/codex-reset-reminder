@@ -1,0 +1,57 @@
+[package]
+name = "codex-reset-reminder"
+version = "0.1.0"
+description = "Codex 额度重置提醒器"
+authors = ["Lain42"]
+license = "AGPL-3.0-or-later"
+edition = "2021"
+rust-version = "1.85"
+
+[lib]
+name = "codex_reset_reminder_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-http = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+# ============================================================================
+# 体积优化：沿用 new-api/tauri 与 colibri 的实测配置
+# ============================================================================
+
+[profile.dev]
+opt-level = 1
+debug = false
+incremental = true
+codegen-units = 16
+strip = "debuginfo"
+# 不要在这里写 panic = "abort"：dev 档用于 cargo test，
+# abort 模式下测试框架无法捕获 panic，整条测试车道会直接失败。
+
+[profile.dev.package."*"]
+opt-level = "z"
+debug = false
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+incremental = false
+overflow-checks = false
+debug-assertions = false

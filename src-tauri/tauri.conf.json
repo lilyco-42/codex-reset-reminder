@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Codex Reset Reminder",
+  "version": "0.1.0",
+  "identifier": "top.lain42.codexreset",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Codex 额度重置提醒",
+        "width": 460,
+        "height": 720,
+        "minWidth": 380,
+        "minHeight": 520,
+        "resizable": true,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Codex 额度重置提醒器",
+    "longDescription": "监控 Codex 个人额度窗口、全局重置事件与服务状态，并在重置前后主动提醒。支持 Windows、Linux、macOS、Android 和 iOS。",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
+  }
+}

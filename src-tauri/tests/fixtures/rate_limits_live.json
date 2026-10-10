@@ -1,0 +1,293 @@
+{
+ "source": "live ~/.codex/sessions tail read",
+ "session_bytes": 1850346264,
+ "collected_at": "2026-10-10T12:30:03.234Z",
+ "blocks": [
+  {
+   "ts": "2026-10-10T12:07:52.470Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 4,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 43,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:08:01.831Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 6,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 44,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:08:12.784Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 8,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 44,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:08:51.095Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 9,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 44,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:09:30.255Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 10,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 44,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:13:01.156Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 11,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 44,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:14:31.078Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 11,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 45,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:14:49.277Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 12,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 45,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:16:21.052Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 13,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 45,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:18:00.740Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 14,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 45,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  },
+  {
+   "ts": "2026-10-10T12:19:25.730Z",
+   "rate_limits": {
+    "limit_id": "codex",
+    "limit_name": null,
+    "primary": {
+     "used_percent": 15,
+     "window_minutes": 300,
+     "resets_at": 1791650325
+    },
+    "secondary": {
+     "used_percent": 45,
+     "window_minutes": 10080,
+     "resets_at": 1792160751
+    },
+    "credits": {
+     "has_credits": false,
+     "unlimited": false,
+     "balance": "0"
+    },
+    "individual_limit": null,
+    "spend_control_reached": null,
+    "plan_type": null,
+    "rate_limit_reached_type": null
+   }
+  }
+ ]
+}

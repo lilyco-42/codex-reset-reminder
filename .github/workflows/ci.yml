@@ -1,0 +1,194 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CLI: npx --yes @tauri-apps/cli@2
+  APP: codex-reset-reminder
+
+# 统一用 bash：Windows 默认 pwsh 会把 `@tauri-apps/cli@2` 当成 splatting 语法解析。
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # 便宜的编译与逻辑门：任何 Rust API 名字写错，都先在这里暴露，而不是烧掉四平台矩阵。
+  check:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: src-tauri
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: 安装 Linux 系统依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf pkg-config
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+      - name: 格式检查
+        run: cargo fmt --all --check
+      - name: 单元测试（夹具来自真实线上数据）
+        run: cargo test --locked
+
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: 线上数据源探针
+        run: node scripts/probe-sources.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: probe-report
+          path: probe-report.json
+
+  desktop:
+    needs: [check]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-x64
+            os: windows-latest
+            bundles: nsis,msi
+          - name: linux-x64
+            os: ubuntu-24.04
+            bundles: deb,appimage
+          - name: macos
+            os: macos-latest
+            bundles: dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: 安装 Linux 系统依赖
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libxdo-dev libssl-dev libayatana-appindicator3-dev \
+            librsvg2-dev patchelf pkg-config
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+      - name: 构建桌面安装包
+        run: ${{ env.CLI }} build --bundles ${{ matrix.bundles }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.APP }}-${{ matrix.name }}
+          path: |
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.dmg
+          if-no-files-found: error
+
+  android:
+    needs: [check]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: 确认或安装 Android SDK
+        run: |
+          if [ -z "${ANDROID_HOME:-}" ]; then
+            echo "ANDROID_HOME 未设置，安装 cmdline-tools"
+            export ANDROID_HOME="$HOME/android-sdk"
+            echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          fi
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          ls "${ANDROID_HOME:-/none}/platforms" 2>/dev/null || true
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
+      - name: 添加 Android Rust 目标
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+      - name: 生成 Android 工程
+        run: ${{ env.CLI }} android init --ci
+      - name: 构建 debug APK（可直接侧载）
+        working-directory: .
+        run: ${{ env.CLI }} android build --apk --debug
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.APP }}-android-debug
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+
+  # iOS 只在打标签或手动触发时构建：需要 macOS  runner，且真机签名依赖 Apple 账号。
+  ios:
+    needs: [check]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: 添加 iOS Rust 目标
+        run: rustup target add aarch64-apple-ios-sim aarch64-apple-ios
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: src-tauri
+      - name: 生成 iOS 工程
+        run: ${{ env.CLI }} ios init --ci
+      - name: 读取生成的 scheme 名
+        id: scheme
+        run: |
+          PROJECT=$(find src-tauri/gen/apple -maxdepth 1 -name '*.xcodeproj' | head -1)
+          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
+          SCHEME=$(xcodebuild -list -json -project "$PROJECT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log((j.project.schemes||[])[0]||"")})')
+          echo "scheme=$SCHEME" >> "$GITHUB_OUTPUT"
+          echo "project=$PROJECT scheme=$SCHEME"
+      - name: 为模拟器构建（不签名，验证 Rust/Swift 胶水能编过）
+        run: |
+          xcodebuild -project "${{ steps.scheme.outputs.project }}" \
+            -scheme "${{ steps.scheme.outputs.scheme }}" \
+            -sdk iphonesimulator -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build
+      - name: 收集 .app
+        run: |
+          APP=$(find "$RUNNER_TEMP/Build/Products" -maxdepth 1 -name '*.app' | head -1)
+          if [ -z "$APP" ]; then
+            APP=$(find ~/Library/Developer/Xcode/DerivedData -name '*.app' -path '*iphonesimulator*' | head -1)
+          fi
+          echo "found=$APP"
+          test -n "$APP"
+          mkdir -p out && cp -R "$APP" out/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.APP }}-ios-simulator
+          path: out/*.app
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [desktop, android]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          files: dist/**
+          generate_release_notes: true

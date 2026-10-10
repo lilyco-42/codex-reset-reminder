@@ -1,0 +1,17 @@
+{
+  "name": "codex-reset-reminder",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Codex 额度重置提醒器：Windows / Linux / macOS / Android / iOS",
+  "scripts": {
+    "dev": "npx --yes @tauri-apps/cli@2 dev",
+    "build": "npx --yes @tauri-apps/cli@2 build",
+    "icon": "npx --yes @tauri-apps/cli@2 icon src-tauri/app-icon.png -o src-tauri/icons",
+    "android:init": "npx --yes @tauri-apps/cli@2 android init",
+    "android:dev": "npx --yes @tauri-apps/cli@2 android dev",
+    "ios:init": "npx --yes @tauri-apps/cli@2 ios init",
+    "probe": "node scripts/probe-sources.mjs",
+    "test": "cd src-tauri && cargo test --locked",
+    "fmt": "cd src-tauri && cargo fmt --all"
+  }
+}

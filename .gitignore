@@ -1,0 +1,16 @@
+/target/
+**/target/
+node_modules/
+.probe-report.json
+probe-report.json
+.DS_Store
+*.log
+
+# Android / iOS 工程由 CI 用 `tauri android init` / `tauri ios init` 生成
+src-tauri/gen/android/
+src-tauri/gen/apple/
+src-tauri/gen/schemas/
+
+# 本机调试产物
+.idea/
+.vscode/
