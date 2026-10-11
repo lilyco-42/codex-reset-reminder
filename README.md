@@ -110,7 +110,32 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 `https://codex-reset-mirror.<account>.workers.dev/data.json` → **20 秒超时**，
 且该域名 DNS 被污染到 `2a03:2880::/29`（Facebook 段）。对照两项：`api.cloudflare.com` 能连通、
 同为 Cloudflare 边缘的 `codexreset.org` 境内返回 200。结论是**不是 Cloudflare 被墙，
-而是 `workers.dev` 这个后缀被专门污染**——所以 Worker 必须绑自己的域名才解决境内问题。
+而是 `workers.dev` 这个后缀被专门污染**。
+
+**境内可用的端点已经有了**（2026-10-11 做完并实测）：把镜像桶绑一个自己的域名，Worker 不动、
+数据链路不变，只是多一条从 R2 直接读同一条对象的途径：
+
+```
+https://codexreset.lilyco42.top/data.json
+```
+
+境内阿里云机（cn-shanghai）→ **HTTP 200 / 6206 B**，正文 `generated_at_cst 2026-10-11 19:00:26`、
+`events 38`、`errors []`、`status` 字段齐（sha256 `4ca2fc44b7c6…`）。
+注意一件不对称的事：**这台开发机走代理去访问它会在 TLS 握手阶段失败（schannel），
+而境内服务器拿到的是 200**——所以别用本机的失败去判断境内可用性。
+
+绑法（用现有 `wrangler login` 的 OAuth token 就行，**不需要 `dns_records:edit`**，
+Cloudflare 自己建记录）：
+
+```bash
+node <全局>/wrangler/bin/wrangler.js r2 bucket domain add codex-reset-mirror \
+  --domain codexreset.lilyco42.top --zone-id "$(curl -s -H "Authorization: Bearer $TOK" \
+  'https://api.cloudflare.com/client/v4/zones?name=lilyco42.top' | jq -r '.result[0].id')" -y
+```
+
+**代价要知道**：R2 自定义域名等于**整桶公开可读**。这个桶里只有 `data.json` 一个对象，
+而它本来就被 Worker 的 `/data.json` 公开返回（CORS `*`），所以没有新增暴露面；
+换桶之前要先把这一点核清楚。撤销是一条命令：`wrangler r2 bucket domain remove codex-reset-mirror --domain …`。
 
 ```bash
 cd mirror-cf
@@ -120,6 +145,7 @@ npx wrangler deploy
 ```
 
 App 侧：设置里填 `mirror_url`（必须 https）即优先走镜像，一次请求同时拿到事件与状态；
+境内可用的值就是上面那个 `https://codexreset.lilyco42.top/data.json`。
 **镜像失败或数据超过 6 小时没更新会自动退回直连并在状态栏说明**——后者是防止同步任务悄悄停了、
 App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
 
