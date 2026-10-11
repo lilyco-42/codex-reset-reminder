@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use crate::error::{AppError, Result};
 use crate::model::{StatusInfo, TrackerEvent};
 
-/// 境内镜像（lain42.top 上的同步脚本产出的 data.json）。
+/// 境内镜像：R2 自定义域名上的 data.json（Worker 每 10 分钟重写同一个对象）。
+/// 实测 https://codexreset.lilyco42.top/data.json 在 cn-shanghai 返回 200；
+/// 不要改用 lain42.top 的静态路径——那台 pingap 在 HTTP/1.1 上对静态文件同时回
+/// Content-Length 与 Transfer-Encoding，严格的非浏览器客户端会直接读失败。
 /// 注意它和直接抓 codexreset.org 是两条路：镜像返回的是**已解析好的 JSON**，
 /// 所以这里不做 HTML 解析，只做结构校验。
 const STALE_MS: i64 = 6 * 3_600_000;
