@@ -16,6 +16,8 @@ jobs:
           node-version: "22"
       - name: 数据源结构探针
         run: node scripts/probe-sources.mjs
+      - name: 镜像健康检查（cron 停了要在这里变红，而不是让 App 一直显示"没有新重置"）
+        run: node scripts/check-mirror.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
