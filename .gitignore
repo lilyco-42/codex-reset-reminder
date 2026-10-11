@@ -16,3 +16,5 @@ src-tauri/gen/schemas/
 .idea/
 .vscode/
 asset-report.json
+__pycache__/
+*.pyc

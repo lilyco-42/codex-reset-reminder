@@ -1,0 +1,17 @@
+name = "codex-reset-mirror"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+# 每 10 分钟同步一次（Cloudflare cron，UTC）。
+[triggers]
+crons = ["*/10 * * * *"]
+
+# 独立桶，不复用 stronghold-assets（那里面是游戏资产，混在一起以后没法清理）。
+[[r2_buckets]]
+binding = "MIRROR"
+bucket_name = "codex-reset-mirror"
+
+[vars]
+TRACKER_URL = "https://codexreset.org"
+STATUS_URL = "https://codex-reset.com/api/status"
+STALE_MS = "21600000"

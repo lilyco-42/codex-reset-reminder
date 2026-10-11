@@ -20,7 +20,9 @@ Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
    - 兼容 `payload.info.rate_limits` 这一层嵌套。
 2. **codexreset.org 时间线**（服务端渲染 HTML）
    - 解析 `data-testid="reset-timeline-item"` 节点上的 `data-datetime` / `data-kind` / `data-source-url`。
-   - 实测 37 个节点（28 `confirmed` + 9 `post`），最新 `confirmed` = `2026-10-07T03:35:09.000Z`。
+   - 2026-10-10 快照为 37 个节点（28 `confirmed` + 9 `post`），10-11 复测已涨到 38（28 + 10）——
+     节点数会随时间增长，所以夹具是冻结快照，测试里的数字对应快照而不是"当前线上"。
+     最新 `confirmed` = `2026-10-07T03:35:09.000Z`。
 3. **codex-reset.com/api/status**（JSON）
    - 实测字段：`indicator` `description` `codex` `degraded` `incident_count` `checked_at`。
    - 注意：`indicator` 可以是 `minor` 而 `degraded=false`、`incident_count=0`，所以**故障判据不看 indicator**，只看 `degraded || incident_count>0 || codex!="operational"`。这条判断有专门的回归测试（`minor_indicator_alone_is_not_an_incident`）。
@@ -89,24 +91,41 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 
 ## 境内镜像（可选）
 
-国内直连两个第三方站点不稳定，所以仓库带了一套自托管镜像，跑在境内服务器上：
+国内直连两个第三方站点不稳定，所以同一份数据做了**两个独立生产者**，读取端是同一个 Rust 解析器：
 
 | 文件 | 作用 |
 | --- | --- |
 | `mirror/sync.py` | 抓两个源 → 解析 → 原子写 `data.json` + 内联数据的 `index.html`。只用标准库，跑完即退，无常驻进程 |
 | `mirror/codex-reset-mirror.{service,timer}` | systemd oneshot + 10 分钟 timer |
-| `mirror/patch-pingap-codex.py` | 幂等地给 pingap 加一条 `/codex` 静态目录 location（带 dry-run、备份、`pingap -t` 自检） |
+| `mirror/patch-pingap-codex.py` | 幂等地给 pingap 加一条 `/codex` 静态目录 location（带 dry-run、备份、`pingap -t` 自检、两个变异对照） |
+| `mirror-cf/src/index.js` | Cloudflare Worker：`scheduled` 每 10 分钟同步进 R2；提供 `/data.json` `/` `/health` `/sync?token=` |
+| `mirror-cf/wrangler.toml` | 绑**独立**桶 `codex-reset-mirror`，不复用游戏资产桶 `stronghold-assets` |
 
-实测数据（境内阿里云机）：`codexreset.org` 200 / 9.8 s，`codex-reset.com/api/status` 200 / 2.6 s，
-`x.com` 直连失败（所以页面上的"原帖"链接在境内需要代理才能打开）。
-同步一轮 6.99 s，产出 `data.json` 7 062 B、`index.html` 10 986 B。
+### 实测
+
+境内阿里云机（cn-shanghai）发起：`codexreset.org` 200 / 9.8 s、`codex-reset.com/api/status` 200 / 2.6 s、
+`x.com` 直连失败。同步一轮 6.99 s，产出 `data.json` 7 062 B、`index.html` 10 986 B。
+
+**`*.workers.dev` 在境内不可用（实测，不是听说）**：同一台境内机器访问
+`https://codex-reset-mirror.<account>.workers.dev/data.json` → **20 秒超时**，
+且该域名 DNS 被污染到 `2a03:2880::/29`（Facebook 段）。对照两项：`api.cloudflare.com` 能连通、
+同为 Cloudflare 边缘的 `codexreset.org` 境内返回 200。结论是**不是 Cloudflare 被墙，
+而是 `workers.dev` 这个后缀被专门污染**——所以 Worker 必须绑自己的域名才解决境内问题。
+
+```bash
+cd mirror-cf
+npx wrangler r2 bucket create codex-reset-mirror                        # 只需一次
+printf '%s' "$(openssl rand -hex 16)" | npx wrangler secret put SYNC_TOKEN
+npx wrangler deploy
+```
 
 App 侧：设置里填 `mirror_url`（必须 https）即优先走镜像，一次请求同时拿到事件与状态；
 **镜像失败或数据超过 6 小时没更新会自动退回直连并在状态栏说明**——后者是防止同步任务悄悄停了、
 App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
 
-`mirror_data.json` 夹具是服务器上 Python 真实产出的文件，由 Rust 读取端测试——
-写入端和读取端不共享代码，所以不会互相印证出同一个错误。
+两份夹具 `mirror_data.json`（Python 产出）与 `mirror_data_cf.json`（Cloudflare 产出）都是真实抓取结果；
+测试 `both_producers_share_one_contract` 断言两个独立生产者的字段与节点集合完全一致，
+写入端漂移会立刻让 CI 变红。
 
 ## 已知边界
 

@@ -255,6 +255,7 @@ def main() -> int:
     confirmed = [e for e in events if e.get("kind") == "confirmed"]
     payload = {
         "generated_at_ms": int(time.time() * 1000),
+        "generated_at_iso": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "generated_at_cst": datetime.now(CST).strftime("%Y-%m-%d %H:%M:%S"),
         "sources": {"tracker": TRACKER_URL, "status": STATUS_URL},
         "events": events,

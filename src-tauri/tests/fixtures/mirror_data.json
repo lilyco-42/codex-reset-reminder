@@ -1,11 +1,18 @@
 {
- "generated_at_ms": 1791649812785,
- "generated_at_cst": "2026-10-11 00:30:12",
+ "generated_at_ms": 1791687354796,
+ "generated_at_iso": "2026-10-11T02:55:54Z",
+ "generated_at_cst": "2026-10-11 10:55:54",
  "sources": {
   "tracker": "https://codexreset.org",
   "status": "https://codex-reset.com/api/status"
  },
  "events": [
+  {
+   "date_time": "2026-10-10T22:16:20.000Z",
+   "ts_ms": 1791670580000,
+   "kind": "post",
+   "source_url": "https://x.com/thsottiaux/status/2109045392684032299"
+  },
   {
    "date_time": "2026-10-07T03:35:09.000Z",
    "ts_ms": 1791344109000,
@@ -242,7 +249,7 @@
   "codex": "operational",
   "degraded": false,
   "incident_count": 0,
-  "checked_at": "2026-10-10T16:25:54.437Z",
+  "checked_at": "2026-10-11T02:55:26.214Z",
   "in_trouble": false
  },
  "errors": []

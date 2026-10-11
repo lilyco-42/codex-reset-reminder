@@ -46,29 +46,41 @@ mod tests {
     /// 夹具由服务器上 Python 同步脚本真实产出，不是手打的：
     /// 这样 Rust 读取端和 Python 写入端不可能各说各话。
     const REAL: &str = include_str!("../tests/fixtures/mirror_data.json");
+    /// 第二份夹具来自另一个独立生产者（Cloudflare Worker，JS 实现）。
+    const CF: &str = include_str!("../tests/fixtures/mirror_data_cf.json");
 
     fn now_for_fixture() -> i64 {
         let v: serde_json::Value = serde_json::from_str(REAL).unwrap();
         v["generated_at_ms"].as_i64().unwrap() + 60_000
     }
 
+    fn now_for_cf() -> i64 {
+        let v: serde_json::Value = serde_json::from_str(CF).unwrap();
+        v["generated_at_ms"].as_i64().unwrap() + 60_000
+    }
+
     #[test]
     fn reads_the_real_server_generated_payload() {
         let d = parse_mirror(REAL, now_for_fixture()).expect("真实镜像应可解析");
-        assert_eq!(d.events.len(), 37, "节点数应与实测一致");
+        assert_eq!(d.events.len(), 38, "节点数应与抓取时实测一致");
         assert_eq!(d.events.iter().filter(|e| e.is_confirmed()).count(), 28);
-        assert_eq!(d.events.iter().filter(|e| e.kind == "post").count(), 9);
+        assert_eq!(d.events.iter().filter(|e| e.kind == "post").count(), 10);
         assert!(d.errors.is_empty());
         assert!(d.events.iter().all(|e| e.source_url.is_some()));
     }
 
     #[test]
-    fn newest_event_matches_the_independently_measured_reset() {
+    fn newest_confirmed_is_the_independently_measured_reset() {
+        // events[0] 只是"最新一条"，可能是动态；全局重置要看 confirmed 里最新的那条。
         let d = parse_mirror(REAL, now_for_fixture()).unwrap();
-        let first = &d.events[0];
-        assert_eq!(first.date_time, "2026-10-07T03:35:09.000Z");
-        assert_eq!(first.ts_ms, 1_791_344_109_000);
-        assert!(first.is_confirmed());
+        assert_eq!(d.events[0].kind, "post", "夹具里最新一条确实是动态");
+        let c = d
+            .events
+            .iter()
+            .find(|e| e.is_confirmed())
+            .expect("应有 confirmed 节点");
+        assert_eq!(c.date_time, "2026-10-07T03:35:09.000Z");
+        assert_eq!(c.ts_ms, 1_791_344_109_000);
     }
 
     #[test]
@@ -78,6 +90,59 @@ mod tests {
         let s = d.status.expect("镜像带状态字段");
         assert_eq!(s.codex, "operational");
         assert!(!s.in_trouble(), "当时服务正常，不该报警");
+    }
+
+    #[test]
+    fn reads_the_cloudflare_produced_payload_too() {
+        let d = parse_mirror(CF, now_for_cf()).expect("第二个生产者的产物也应可读");
+        assert_eq!(d.events.len(), 38);
+        assert_eq!(d.events.iter().filter(|e| e.is_confirmed()).count(), 28);
+        assert!(d.errors.is_empty());
+        assert_eq!(d.status.expect("有状态").codex, "operational");
+    }
+
+    #[test]
+    fn both_producers_share_one_contract() {
+        // 两个独立实现（Python 在境内机、JS 在 Cloudflare）必须给同一套字段，
+        // 否则读取端迟早只认其中一边。
+        use std::collections::BTreeSet;
+        let keys = |raw: &str| -> BTreeSet<String> {
+            let v: serde_json::Value = serde_json::from_str(raw).unwrap();
+            v.as_object()
+                .unwrap()
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<_>>()
+        };
+        let event_keys = |raw: &str| -> BTreeSet<String> {
+            let v: serde_json::Value = serde_json::from_str(raw).unwrap();
+            v["events"][0]
+                .as_object()
+                .unwrap()
+                .keys()
+                .cloned()
+                .collect::<BTreeSet<_>>()
+        };
+        assert_eq!(keys(REAL), keys(CF), "顶层字段必须一致");
+        assert_eq!(event_keys(REAL), event_keys(CF), "事件字段必须一致");
+
+        // 逐条内容也要一致（时间戳不同没关系，节点集合必须相同）。
+        let ids = |raw: &str| -> BTreeSet<String> {
+            let v: serde_json::Value = serde_json::from_str(raw).unwrap();
+            v["events"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|e| {
+                    format!(
+                        "{}|{}",
+                        e["date_time"].as_str().unwrap_or(""),
+                        e["kind"].as_str().unwrap_or("")
+                    )
+                })
+                .collect()
+        };
+        assert_eq!(ids(REAL), ids(CF), "两个生产者抓到的节点集合应相同");
     }
 
     #[test]
