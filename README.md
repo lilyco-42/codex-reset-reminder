@@ -123,6 +123,12 @@ App 侧：设置里填 `mirror_url`（必须 https）即优先走镜像，一次
 **镜像失败或数据超过 6 小时没更新会自动退回直连并在状态栏说明**——后者是防止同步任务悄悄停了、
 App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
 
+镜像这一路的超时是独立的 **6 秒**（直连仍是 20 秒），因为上面实测的失败形态是"连得上、不回包"
+而不是"立刻拒绝"：按 20 秒等下去，一次检查光是等镜像就把大半轮询窗口烧光了。
+另加 5 秒连接超时，最坏情况（镜像 6 s + 两个直连 20 s + 20 s = 46 s）仍小于被 clamp 到
+1 分钟的最小轮询间隔。`blackholed_mirror_fails_inside_its_own_budget` 用本机黑洞服务验证超时真的会触发，
+`a_responding_server_still_reads_through_the_same_path` 是同一条代码路径的正向对照。
+
 两份夹具 `mirror_data.json`（Python 产出）与 `mirror_data_cf.json`（Cloudflare 产出）都是真实抓取结果；
 测试 `both_producers_share_one_contract` 断言两个独立生产者的字段与节点集合完全一致，
 写入端漂移会立刻让 CI 变红。

@@ -18,6 +18,11 @@ pub const TRACKER_URL: &str = "https://codexreset.org";
 pub const STATUS_URL: &str = "https://codex-reset.com/api/status";
 const UA: &str = "codex-reset-reminder/0.1";
 const FETCH_TIMEOUT: Duration = Duration::from_secs(20);
+/// 镜像这一路的预算必须明显短于直连：workers.dev 在境内是被 DNS 污染的，
+/// 解析出来的地址多半连得上但不回包，属于"挂住"而不是"立刻失败"。
+/// 若按 FETCH_TIMEOUT 等，一次检查光是等镜像就烧掉 20 秒才想起退回直连。
+const MIRROR_TIMEOUT: Duration = Duration::from_secs(6);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_BODY_BYTES: usize = 16 * 1024 * 1024;
 
 pub const IS_MOBILE: bool = cfg!(any(target_os = "android", target_os = "ios"));
@@ -120,8 +125,19 @@ async fn fire(
 }
 
 async fn get_text(url: &str) -> Result<String> {
+    get_text_budget(url, FETCH_TIMEOUT).await
+}
+
+async fn get_text_budget(url: &str, budget: Duration) -> Result<String> {
+    // connect_timeout 不能大于总预算，否则 reqwest 会整个建不出客户端。
+    let connect = if CONNECT_TIMEOUT < budget {
+        CONNECT_TIMEOUT
+    } else {
+        budget
+    };
     let client = reqwest::Client::builder()
-        .timeout(FETCH_TIMEOUT)
+        .timeout(budget)
+        .connect_timeout(connect)
         .user_agent(UA)
         .build()
         .map_err(|e| AppError::Http(format!("无法创建 HTTP 客户端：{e}")))?;
@@ -192,7 +208,7 @@ pub async fn crr_check(
     // 镜像优先：境内直连两个第三方站点不稳定，自建镜像一次给齐事件与状态。
     let mirror = cfg.mirror_url.trim().to_string();
     if !mirror.is_empty() {
-        match get_text(&mirror).await {
+        match get_text_budget(&mirror, MIRROR_TIMEOUT).await {
             Ok(json) => match parse_mirror(&json, now_ms) {
                 Ok(m) => {
                     from_mirror = true;
@@ -524,5 +540,77 @@ mod tests {
         } else {
             assert!(!IS_MOBILE, "桌面目标不应被判定为移动端");
         }
+    }
+
+    /// 只在测试里用的本机服务。respond=false 时收下连接后一言不发，
+    /// 用来复现境内解析到黑洞地址时"连得上、不回包"的那种挂起。
+    fn start_local_server(respond: bool) -> u16 {
+        // 别让环境里的代理把发往 127.0.0.1 的请求拐走。
+        std::env::set_var("NO_PROXY", "127.0.0.1,localhost");
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("本机监听应可用");
+        let port = listener.local_addr().expect("应能拿到本机监听端口").port();
+        std::thread::spawn(move || {
+            for conn in listener.incoming() {
+                let Ok(mut stream) = conn else { continue };
+                if respond {
+                    let mut buf = [0u8; 512];
+                    let _ = std::io::Read::read(&mut stream, &mut buf);
+                    let body = "{\"ok\":true}";
+                    let head = format!(
+                        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        body.len(),
+                        body
+                    );
+                    let _ = std::io::Write::write_all(&mut stream, head.as_bytes());
+                    let _ = std::io::Write::flush(&mut stream);
+                } else {
+                    // 故意既不回包也不关连接，留着让超时自己触发。
+                    std::thread::spawn(move || {
+                        std::thread::sleep(Duration::from_secs(120));
+                        drop(stream);
+                    });
+                }
+            }
+        });
+        port
+    }
+
+    #[test]
+    fn blackholed_mirror_fails_inside_its_own_budget() {
+        let port = start_local_server(false);
+        let url = format!("http://127.0.0.1:{port}/data.json");
+        let started = std::time::Instant::now();
+        let r = tauri::async_runtime::block_on(get_text_budget(&url, MIRROR_TIMEOUT));
+        let elapsed = started.elapsed();
+        let secs = MIRROR_TIMEOUT.as_secs();
+        assert!(r.is_err(), "黑洞服务必须失败，不能当成取到了数据");
+        assert!(
+            elapsed < Duration::from_secs(15),
+            "镜像预算 {secs} 秒，实测 {elapsed:?}，说明超时没生效"
+        );
+    }
+
+    #[test]
+    fn a_responding_server_still_reads_through_the_same_path() {
+        // 正向对照：上一条的失败必须来自"对方不回包"，而不是这条路本身走不通。
+        let port = start_local_server(true);
+        let url = format!("http://127.0.0.1:{port}/data.json");
+        let body = tauri::async_runtime::block_on(get_text(&url)).expect("正常服务应能读到内容");
+        assert_eq!(body, "{\"ok\":true}");
+    }
+
+    #[test]
+    fn one_check_cycle_fits_inside_the_minimum_poll_interval() {
+        // 轮询间隔最小被 clamp 到 1 分钟，一次检查的最坏网络耗时（镜像 + 两个直连）
+        // 要留有余量，否则上一轮没跑完下一轮就叠上来了。
+        assert!(
+            MIRROR_TIMEOUT < FETCH_TIMEOUT,
+            "镜像必须先于直连放弃，直连才是数据的真正来源"
+        );
+        let worst = MIRROR_TIMEOUT + FETCH_TIMEOUT + FETCH_TIMEOUT;
+        assert!(
+            worst < Duration::from_secs(60),
+            "一次检查最坏要 {worst:?}，已经贴住最小轮询间隔"
+        );
     }
 }
