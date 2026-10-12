@@ -14,6 +14,16 @@ name: source-drift
 on:
   schedule:
     - cron: "23 */6 * * *"
+  # 加一条不依赖 GitHub 定时器的触发：每次 main 的 ci 跑完都顺手探一遍。
+  # 为什么要加：一天四次这个改法已被实测否证 —— 12:23 UTC 的槽位过期后本仓 0 个 run
+  # （ops 仓同时段也是 0），而同账号唯一确定会落地的是另一条 02:22 的 cron（推迟约 7 小时）。
+  # 那条评论里的搭桥（workflow_run 挂到实测会跑的车道）只能在 ops 仓做，本仓没有每天落地的
+  # 定时工作流可搭，所以退一步：至少保证"有提交就必然探一次"，空闲期靠 Worker /health + App 的
+  # 6 小时退回直连这两层在线机制兜底。
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
