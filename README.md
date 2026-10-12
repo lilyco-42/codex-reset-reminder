@@ -173,6 +173,10 @@ App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
 - **移动端读不到本机额度**：iOS/Android 没有 `~/.codex` 会话日志，界面会明确标注，只显示全局重置与服务状态；个人额度靠桌面端转发推送。
 - **开机自启只在桌面端有效**：`tauri-plugin-autostart` 的 Rust API（`ManagerExt`/`MacosLauncher`/`init`）在 android/ios 目标上根本不存在，实测安卓编译会直接报错，所以移动端不注册该插件，设置页里的自启开关在手机上自动隐藏，而不是灰着骗人。同理 `WebviewWindow::minimize/unminimize` 也只存在于桌面端。
 - **没有自建推送服务**：推送依赖 ntfy.sh / Bark 这类公共服务，且 iOS 推送最终仍经 APNs，公共免费通道有频率上限。
+- **ios 车道是这条矩阵里最容易假红的一条**：`tauri ios build --no-sign` 会在构建时临时从 GitHub 取 SwiftPM 依赖
+  （`Brendonovich/swift-rs`），runner 上出现过缓存目录不存在导致的 `xcodebuild` 65（run 38279394332，2026-10-12，
+  同一棵树的另外六个作业全绿）。所以那一步现在自带两次重试；**并且发版不被它卡住** —— `release` 作业的条件是
+  `always()` 且只要求 `desktop` 与 `android` 成功，ipa 属于加分项。
 - **iOS 真机安装**：CI 产出的是**未签名 `.ipa`**（`tauri ios build --no-sign`），需用 SideStore/AltStore 以免费 Apple ID 重签后安装，免费账号 7 天过期需续签；付费开发者账号可延长到 1 年。
   已核对 v0.1.0 的 ipa 内容：可执行文件头是 `cffaedfe` + cputype `0100000c`（**arm64 真机，不是模拟器**），
   `Info.plist` 里 `CFBundleIdentifier=top.lain42.codexreset`、`DTPlatformName=iPhoneOS`、
