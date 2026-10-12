@@ -5,11 +5,13 @@ on:
     branches: [main]
     tags: ["v*"]
     # 纯文档改动不值得跑一轮四平台矩阵（打 tag 时不受此限制）。
+    # source-drift.yml 也排除：它只是那条探针的排程，改它不需要重新编译五个平台。
     paths-ignore:
       - "docs/**"
       - "*.md"
       - ".gitignore"
       - ".gitattributes"
+      - ".github/workflows/source-drift.yml"
   pull_request:
   workflow_dispatch:
 
