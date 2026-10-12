@@ -103,8 +103,10 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 
 ### 实测
 
-境内阿里云机（cn-shanghai）发起：`codexreset.org` 200 / 9.8 s、`codex-reset.com/api/status` 200 / 2.6 s、
-`x.com` 直连失败。同步一轮 6.99 s，产出 `data.json` 7 062 B、`index.html` 10 986 B。
+境内阿里云机（cn-shanghai）发起：`codexreset.org` 200、`codex-reset.com/api/status` 200、
+`x.com` 直连失败。（每次抓的耗时和 `data.json` 字节数会随上游事件数变，所以这里不钉数字——
+`data.json` 每 10 分钟被 Worker 重写一次，钉了就等于写一条每天都会过期的断言。要实测就跑
+`node scripts/check-mirror.mjs`，它把两端都按契约核一遍。）
 
 **`*.workers.dev` 在境内不可用（实测，不是听说）**：同一台境内机器访问
 `https://codex-reset-mirror.<account>.workers.dev/data.json` → **20 秒超时**，
@@ -119,10 +121,16 @@ iOS 不允许 App 在后台随便定时唤醒，Apple 又要求推送必须走 A
 https://codexreset.lilyco42.top/data.json
 ```
 
-境内阿里云机（cn-shanghai）→ **HTTP 200 / 6206 B**，正文 `generated_at_cst 2026-10-11 19:00:26`、
-`events 38`、`errors []`、`status` 字段齐（sha256 `4ca2fc44b7c6…`）。
-注意一件不对称的事：**这台开发机走代理去访问它会在 TLS 握手阶段失败（schannel），
-而境内服务器拿到的是 200**——所以别用本机的失败去判断境内可用性。
+境内阿里云机（cn-shanghai）→ **HTTP 200**，`generated_at_ms` 距当时只有几十秒（cron 每 10 分钟重写），
+`events` 38 条、`errors []`、`status` 字段齐。字节数每次同步都会变，所以不钉。
+另有两件事必须写在这里，不然会误判：
+
+1. **`/health` 在这个域名上不存在**（实测 404，回的是 Cloudflare 自己的 "Object not found" 页）。
+   自定义域名绑的是**桶**，只发对象；`/health` 是 Worker 的路由，而 Worker 只在
+   `*.workers.dev` 上——那条正是被污染的那条。所以**境内只能自己按 `generated_at_ms` 算时效**，
+   App 的 6 小时判断和 `check-mirror.mjs` 对 R2 这条路的做法都是这么来的。
+2. **这台开发机走代理去访问它会在 TLS 握手阶段失败（schannel），而境内服务器拿到的是 200**——
+   别用本机的失败去判断境内可用性。
 
 绑法（用现有 `wrangler login` 的 OAuth token 就行，**不需要 `dns_records:edit`**，
 Cloudflare 自己建记录）：
@@ -170,5 +178,9 @@ App 却一直以为"没有新重置"。留空则行为与 v0.1.0 完全一致。
   `Info.plist` 里 `CFBundleIdentifier=top.lain42.codexreset`、`DTPlatformName=iPhoneOS`、
   `UIRequiredDeviceCapabilities` 含 `arm64`，且不含 `embedded.mobileprovision`（未签名的预期结果）。
   复核方式：下载 ipa → `unzip` → 读 `Payload/*.app/<executable>` 前 8 字节与 `Info.plist` 字符串表。
-- 追踪器是第三方页面，结构会变。`source-drift.yml` 每天跑一次探针，红了就说明解析器要改。
+- 追踪器是第三方页面，结构会变。`source-drift.yml` 跑两个探针（数据源结构 + 镜像契约/新鲜度），红了就说明解析器要改。
+  排程是 `23 */6 * * *`（一天四次）而不是一天一次，原因是实测这个账号的 GitHub 定时任务会整小时地推迟甚至直接漏掉：
+  改之前 `event=schedule` 在全历史只落地过 1 次（08:23 那条拖到 14:57），有一天干脆一个 run 都没有。
+  所以**别把这条 CI 当成"镜像停了会有人知道"的唯一保证**——真正在线的兜底是 Worker 的 `/health`（超 6 小时返 500）
+  和 App 自己的 6 小时退回直连，这条只是我这边的主动报警。
 
