@@ -51,6 +51,9 @@ jobs:
         # 目的：ios 那步的重试只有在真抖起来时才走到，所以把它的三条分支在这里每次都跑一遍
         # （成功不打噪声 / 抖一次后成功且恰好尝试 2 次 / 一直失败恰好 2 次并 rc=1 / 参数不足 rc=2）。
         # 变异测试过：把 -ge \$max 改成 -ge 1、或把用法错误改成 exit 0，这个自测都会红。
+        # working-directory 要显式给仓库根：这个 job 的默认目录是 src-tauri（cargo 在那儿跑），
+        # 第一版没写，CI 直接 127 "scripts/test-with-retry.sh: No such file or directory"（run 38281962525）。
+        working-directory: .
         run: bash scripts/test-with-retry.sh
 
   probe:
