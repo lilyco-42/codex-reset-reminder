@@ -185,7 +185,20 @@ jobs:
       - name: 生成 iOS 工程
         run: ${{ env.CLI }} ios init --ci
       - name: 构建未签名 ipa（供 SideStore/AltStore 用免费 Apple ID 重签）
-        run: ${{ env.CLI }} ios build --no-sign
+        # 这一步会临时从 GitHub 取 SwiftPM 依赖（Brendonovich/swift-rs）。run 38279394332（2026-10-12）
+        # 就是这么红的：`git -C …/org.swift.swiftpm/repositories/swift-rs-16819c90 config …` 报
+        # "No such file or directory" → Failed to compile swift package Tauri → xcodebuild 65。
+        # 那是抓取抖动不是代码问题（同一棵树 v0.1.0 出过 ipa），所以重试两次；
+        # 仍然失败就如实变红，不掩盖。Release 作业本来就不被 ios 卡住（见下面 release 的 if）。
+        run: |
+          try=0
+          until ${{ env.CLI }} ios build --no-sign; do
+            try=$((try+1))
+            if [ "$try" -ge 2 ]; then echo "重试 $try 次仍失败，判定为真失败"; exit 1; fi
+            echo "构建失败，第 $try 次重试（等 ${attempt_wait}s 让 SwiftPM 重新抓取）"; sleep "$attempt_wait"
+          done
+        env:
+          attempt_wait: 20
       - name: 收集 ipa
         run: |
           IPA=$(find src-tauri/gen/apple -name '*.ipa' | head -1)
