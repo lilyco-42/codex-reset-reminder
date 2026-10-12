@@ -47,6 +47,11 @@ jobs:
         run: cargo fmt --all --check
       - name: 单元测试（夹具来自真实线上数据）
         run: cargo test --locked
+      - name: 重试包装器的分支自测（纯 shell，不起 WebView）
+        # 目的：ios 那步的重试只有在真抖起来时才走到，所以把它的三条分支在这里每次都跑一遍
+        # （成功不打噪声 / 抖一次后成功且恰好尝试 2 次 / 一直失败恰好 2 次并 rc=1 / 参数不足 rc=2）。
+        # 变异测试过：把 -ge \$max 改成 -ge 1、或把用法错误改成 exit 0，这个自测都会红。
+        run: bash scripts/test-with-retry.sh
 
   probe:
     runs-on: ubuntu-24.04
@@ -186,19 +191,12 @@ jobs:
         run: ${{ env.CLI }} ios init --ci
       - name: 构建未签名 ipa（供 SideStore/AltStore 用免费 Apple ID 重签）
         # 这一步会临时从 GitHub 取 SwiftPM 依赖（Brendonovich/swift-rs）。run 38279394332（2026-10-12）
-        # 就是这么红的：`git -C …/org.swift.swiftpm/repositories/swift-rs-16819c90 config …` 报
-        # "No such file or directory" → Failed to compile swift package Tauri → xcodebuild 65。
-        # 那是抓取抖动不是代码问题（同一棵树 v0.1.0 出过 ipa），所以重试两次；
-        # 仍然失败就如实变红，不掩盖。Release 作业本来就不被 ios 卡住（见下面 release 的 if）。
-        run: |
-          try=0
-          until ${{ env.CLI }} ios build --no-sign; do
-            try=$((try+1))
-            if [ "$try" -ge 2 ]; then echo "重试 $try 次仍失败，判定为真失败"; exit 1; fi
-            echo "构建失败，第 $try 次重试（等 ${attempt_wait}s 让 SwiftPM 重新抓取）"; sleep "$attempt_wait"
-          done
-        env:
-          attempt_wait: 20
+        # 就是这么红的：runner 缓存目录不存在 → Failed to compile swift package Tauri → xcodebuild 65。
+        # 同一棵树的 v0.1.0 出过 ipa，所以是抓取抖动不是代码坏；最多试 3 次（间隔 20 s）。
+        # 循环本体在 scripts/with-retry.sh，由 check 作业里的 test-with-retry.sh 每次构建都验一遍
+        # —— 写在 YAML 里的重试永远测不到，而没测过的重试等于没有。
+        # 仍然失败就如实变红；且 release 不靠 ios（条件是 always() + desktop/android 成功）。
+        run: bash scripts/with-retry.sh 3 20 ${{ env.CLI }} ios build --no-sign
       - name: 收集 ipa
         run: |
           IPA=$(find src-tauri/gen/apple -name '*.ipa' | head -1)
