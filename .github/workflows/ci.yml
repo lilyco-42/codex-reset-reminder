@@ -76,13 +76,14 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - name: 确认 npm 大版本读得懂这份锁
-        # 锁由 npm 11 生成；node 22 自带的 npm 10 会在 npm ci 一开始就抛
-        # "Invalid Version: "（不带任何上下文）。宁可在这里说清版本不对，
-        # 也不要让四条车道各自撞一次同一个谜。
+      - name: 锁审计（"有节点却没版本号"会让 npm ci 在解析阶段就崩）
+        # 这里原来写的是"断言 npm >= 11"，那是错的诊断：换成 node 24 + npm 11 之后仍然红，
+        # 真因是 npm 给 rolldown 的平台绑定写出了没有 version 字段的条目 —— 于是构建链退回 Vite 7，
+        # 并留下这条脚本化审计（本机 win32 的 npm ci --dry-run 过得去，只有 linux 才炸，
+        # 所以必须有一条不用平台就能验的检查）。
         run: |
-          v=$(npm --version); echo "npm $v / node $(node --version)"
-          case "$v" in 1[1-9].*|[2-9][0-9].*) : ;; *) echo "需要 npm >= 11，当前 $v"; exit 1 ;; esac
+          node scripts/check-lock.mjs
+          echo "npm $(npm --version) / node $(node --version)"
       - name: 按锁文件装依赖（与 cargo test --locked 同一条纪律）
         run: npm ci
       - name: 类型检查（不产出文件，只报错）
