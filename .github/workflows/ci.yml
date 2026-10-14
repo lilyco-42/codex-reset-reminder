@@ -40,6 +40,16 @@ jobs:
             libwebkit2gtk-4.1-dev build-essential curl wget file \
             libxdo-dev libssl-dev libayatana-appindicator3-dev \
             librsvg2-dev patchelf pkg-config
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      # tauri::generate_context! 在**编译期**就检查 frontendDist 是否存在，
+      # 换成需要构建的前端之后，cargo 也得先有 dist —— 否则宏 panic 成
+      # "The `frontendDist` configuration is set to `\"../dist\"` but this path doesn't exist"，
+      # 看起来像 Rust 坏了，其实是缺产物（run 38578108239 就是这么红的）。
+      - name: 构建前端产物（供宏嵌入）
+        run: npm ci --no-audit --no-fund && npm run build
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: src-tauri
@@ -64,8 +74,15 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
+      - name: 确认 npm 大版本读得懂这份锁
+        # 锁由 npm 11 生成；node 22 自带的 npm 10 会在 npm ci 一开始就抛
+        # "Invalid Version: "（不带任何上下文）。宁可在这里说清版本不对，
+        # 也不要让四条车道各自撞一次同一个谜。
+        run: |
+          v=$(npm --version); echo "npm $v / node $(node --version)"
+          case "$v" in 1[1-9].*|[2-9][0-9].*) : ;; *) echo "需要 npm >= 11，当前 $v"; exit 1 ;; esac
       - name: 按锁文件装依赖（与 cargo test --locked 同一条纪律）
         run: npm ci
       - name: 类型检查（不产出文件，只报错）
@@ -87,7 +104,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22"
+          node-version: '24'
       - name: 线上数据源探针
         run: node scripts/probe-sources.mjs
 
@@ -122,7 +139,7 @@ jobs:
           workspaces: src-tauri
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       # tauri build 会先跑 build.beforeBuildCommand（= npm run build），
       # 所以这条车道必须有 node_modules，否则 npm 在 CI 上直接 127。
@@ -180,7 +197,7 @@ jobs:
         run: rustup target add aarch64-linux-android
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "22"
+          node-version: '24'
       - name: 安装前端依赖与 tauri CLI
         # Tauri 生成的 gradle 里 rustBuild<Abi> 任务会执行 `npm run tauri`，
         # 所以安卓车道必须有本地 CLI，不能像桌面那样只用 npx。
@@ -222,7 +239,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       # 换成 Vite 之后 `tauri ios build` 会先跑 beforeBuildCommand（npm run build），
       # 这条车道原先连 node_modules 都没有 —— 桌面能过是因为那时前端是静态目录、不需要构建。
