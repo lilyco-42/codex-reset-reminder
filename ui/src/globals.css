@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* 调色板是从旧那份手写 styles.css 原样搬过来的，不是新设计的：
+   bg #0f1115 / panel #171a21 / line #262b36 / text #e8ecf3 / muted #98a2b3
+   ok #4ade80 / warn #fbbf24 / crit #f87171 / accent #7dd3c0。
+   换 UI 框架不是改配色的借口，所以这里一个色值都没自创。
+   这个应用原本只有深色，:root 与 .dark 给同一套值 —— 别指望"顺手"多出个浅色主题。 */
+:root,
+.dark {
+  --radius: 0.55rem;
+
+  --background: #0f1115;
+  --foreground: #e8ecf3;
+
+  --card: #171a21;
+  --card-foreground: #e8ecf3;
+
+  --popover: #171a21;
+  --popover-foreground: #e8ecf3;
+
+  /* 主按钮用他的 accent 作底、深色字 —— 与旧版 .tag / button:hover 用色一致 */
+  --primary: #7dd3c0;
+  --primary-foreground: #0f1115;
+
+  --secondary: #171a21;
+  --secondary-foreground: #e8ecf3;
+
+  --muted: #171a21;
+  --muted-foreground: #98a2b3;
+
+  --accent: #262b36;
+  --accent-foreground: #e8ecf3;
+
+  --destructive: #f87171;
+  --destructive-foreground: #0f1115;
+
+  --border: #262b36;
+  --input: #262b36;
+  --ring: #7dd3c0;
+
+  /* 语义色：旧版拿它们标"正常/需关注/严重"，这里保留同名 token 供 Badge 用 */
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --crit: #f87171;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 数字列不跳动：旧版靠 font-variant-numeric: tabular-nums 撑倒计时 */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -1,7 +1,8 @@
 /target/
 **/target/
 node_modules/
-package-lock.json
+# 前端锁文件必须入库：CI 用 npm ci 复现同一棵树（与 cargo test --locked 同一条纪律）
+# package-lock.json 已改为跟踪
 .probe-report.json
 probe-report.json
 .DS_Store
@@ -18,3 +19,6 @@ src-tauri/gen/schemas/
 asset-report.json
 __pycache__/
 *.pyc
+
+# Vite 产物（CI 里 npm run build 生成，Tauri 从 ../dist 取）
+dist/

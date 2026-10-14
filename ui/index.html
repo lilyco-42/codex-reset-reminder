@@ -1,107 +1,13 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
     <title>Codex 额度重置提醒</title>
-    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header>
-      <div class="brand">
-        <span class="dot" id="pulse"></span>
-        <h1>Codex 额度提醒</h1>
-      </div>
-      <div class="head-actions">
-        <button id="btn-check" type="button">立即检查</button>
-        <button id="btn-settings" type="button" aria-expanded="false">设置</button>
-        <button id="btn-hide" type="button" title="收到系统托盘，继续后台提醒">隐藏</button>
-      </div>
-    </header>
-
-    <p class="statusline" id="statusline">正在启动…</p>
-
-    <main>
-      <section id="panel-quota" class="card wide">
-        <h2>本机额度</h2>
-        <div id="windows"></div>
-        <p class="hint" id="local-note"></p>
-        <p class="meta" id="credits"></p>
-      </section>
-
-      <section id="panel-global" class="card">
-        <h2>最近一次全局重置</h2>
-        <p class="big" id="last-reset">—</p>
-        <p class="meta" id="last-reset-local"></p>
-        <ul class="timeline" id="timeline"></ul>
-      </section>
-
-      <section id="panel-status" class="card">
-        <h2>服务状态</h2>
-        <p class="big" id="status-text">—</p>
-        <p class="meta" id="status-meta"></p>
-      </section>
-
-      <section id="panel-alerts" class="card wide">
-        <h2>提醒记录</h2>
-        <ul class="alerts" id="alerts"></ul>
-      </section>
-
-      <section id="panel-settings" class="card wide" hidden>
-        <h2>设置</h2>
-        <form id="form">
-          <div class="grid">
-            <label>检查间隔（分钟）<input type="number" id="s-poll" min="1" max="180" step="1" /></label>
-            <label>警告阈值（%）<input type="number" id="s-warn" min="1" max="100" step="1" /></label>
-            <label>严重阈值（%）<input type="number" id="s-crit" min="1" max="100" step="1" /></label>
-            <label>提前提醒（分钟）<input type="number" id="s-soon" min="1" max="240" step="1" /></label>
-            <label>静默开始（时）<input type="number" id="s-qs" min="0" max="23" step="1" /></label>
-            <label>静默结束（时）<input type="number" id="s-qe" min="0" max="23" step="1" /></label>
-          </div>
-          <div class="switches">
-            <label><input type="checkbox" id="s-quiet" />启用静默时段</label>
-            <label><input type="checkbox" id="s-local" />提醒本机额度</label>
-            <label><input type="checkbox" id="s-global" />提醒全局重置</label>
-            <label><input type="checkbox" id="s-post" />提醒追踪器动态</label>
-            <label><input type="checkbox" id="s-status" />提醒服务异常</label>
-            <label id="lbl-autostart"><input type="checkbox" id="s-autostart" />开机自动启动</label>
-          </div>
-          <label
-            >推送到手机（可选，ntfy topic 或 Bark 地址，必须 https）
-            <input
-              type="text"
-              id="s-push"
-              placeholder="https://ntfy.sh/你的topic 或 https://api.day.app/你的key"
-            />
-          </label>
-          <label
-            >境内镜像地址（可选，留空则直连官方站点）
-            <input type="text" id="s-mirror" placeholder="https://codexreset.lilyco42.top/data.json" />
-          </label>
-          <p class="hint">
-            推送：填了之后，桌面端命中提醒时会同时 POST 一份到手机，iPhone 不需要让 App 常驻。<br />
-            镜像：国内直连两个第三方站点不稳定，填你自己服务器上的 data.json；镜像失败会自动退回直连。
-          </p>
-          <div class="form-actions">
-            <button type="submit">保存设置</button>
-            <button type="button" id="s-reset">清空提醒记录</button>
-          </div>
-        </form>
-        <p class="meta" id="settings-note"></p>
-      </section>
-    </main>
-
-    <footer>
-      <p class="meta" id="platform"></p>
-      <p class="meta">
-        数据来源：
-        <a href="https://codexreset.org" target="_blank" rel="noreferrer">codexreset.org</a>
-        ·
-        <a href="https://codex-reset.com" target="_blank" rel="noreferrer">codex-reset.com</a>
-        · 本机 ~/.codex/sessions
-      </p>
-    </footer>
-
-    <script src="./app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

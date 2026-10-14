@@ -1,0 +1,98 @@
+{
+  "badge.tsx": {
+    "bytes": 1775,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "0311bb21a5dc8c1e3d70ffc35cccc375c90e2f08bb0f0dd943dad72c19ed45ff",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/badge.json"
+  },
+  "button.tsx": {
+    "bytes": 2391,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "557e27d5d3159c338da761c5aec138dcd32d313b5a55774ea8001c3f3bfc620c",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/button.json"
+  },
+  "card.tsx": {
+    "bytes": 1986,
+    "npmDependencies": [
+      "cn"
+    ],
+    "sha256": "39480d5b63e46554f1cfcedaa91052c848bda5c45d7a5dda80fe91e7be604fb0",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/card.json"
+  },
+  "dialog.tsx": {
+    "bytes": 4303,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "0a85c31675f8269b3b1308fff0ab10d5cda1a090a550a1a74a8f7f439a92ea06",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/dialog.json"
+  },
+  "input.tsx": {
+    "bytes": 961,
+    "npmDependencies": [
+      "cn"
+    ],
+    "sha256": "7bfd0eff6c53a38c99184394a09f55e7a86c725de12d6a300fa46b3765114091",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/input.json"
+  },
+  "label.tsx": {
+    "bytes": 605,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "db5dfcd98a78c5b7c3c01e0bb7726a3adbf0470f4d552e777ccf4751b51e6a56",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/label.json"
+  },
+  "progress.tsx": {
+    "bytes": 734,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "1f6eb12292b38dd1601319ff7d6fc7dfefb8b988813962d688b3a9782000980a",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/progress.json"
+  },
+  "separator.tsx": {
+    "bytes": 693,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "f9ec8dde26a5c3f2af1c48a0c588c164e350567cddc5c4070cf5ba780e984f26",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/separator.json"
+  },
+  "switch.tsx": {
+    "bytes": 1407,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "62bd507d11a7abe5d0fc0b0bb805c794dcff5f75cff8c63e7dd58aec763d9cf5",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/switch.json"
+  },
+  "table.tsx": {
+    "bytes": 2477,
+    "npmDependencies": [
+      "cn"
+    ],
+    "sha256": "84be8055e88e5aebcc3f0d14ec68a03129b0eb65c7619e18866fe74a3a8b81e1",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/table.json"
+  },
+  "tooltip.tsx": {
+    "bytes": 1829,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "345bc589a285ece3622bf18f4c842107836cf6fc8a9055b0a604db0cf6c83551",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/tooltip.json"
+  }
+}
