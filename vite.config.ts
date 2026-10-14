@@ -1,25 +1,29 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath } from "node:url";
+import process from "node:process";
+import { join, resolve } from "node:path";
 
-const ui = fileURLToPath(new URL("./ui/", import.meta.url));
+// 路径一律以 process.cwd() 为锚，不用 import.meta.url：
+// Vite 会先把配置文件打包成一个临时 mjs 再加载，实测（run 38581629650）那时
+// import.meta.url 不再指向仓库根的 vite.config.ts，于是 outDir 算到仓库外面 ——
+// 构建日志里输出前缀是 `../../dist/` 而不是 `../dist/` 就是证据，
+// 而 tauri::generate_context! 仍然报 "frontendDist ... doesn't exist"。
+// 配套要求：每条 npm 步骤都必须显式 working-directory: '.'，cwd 才是仓库根。
+const repo = resolve(process.cwd());
 
-// Tauri 的移动端打包会把产物塞进 apk/ipa 内部路径，绝对 base 在 Android 上会指到根，
-// 所以固定相对 base；端口固定 1420 是 tauri.conf.json 里 devUrl 对得上用的。
 export default defineConfig({
-  root: ui,
+  root: join(repo, "ui"),
   base: "./",
   resolve: {
-    // 组件源里的 "@/lib/utils"、"@/components/ui/*" 是 shadcn 的别名约定，
-    // 指向 ui/src（不是仓库根的 src，那底下没有前端代码）。
-    alias: { "@": fileURLToPath(new URL("./ui/src/", import.meta.url)) },
+    // 组件源里的 "@/lib/utils"、"@/components/ui/*" 是 shadcn 的别名约定
+    alias: { "@": join(repo, "ui/src") },
   },
   server: { port: 1420, strictPort: true, host: process.env.TAURI_DEV_HOST },
   clearScreen: false,
   plugins: [react(), tailwindcss()],
   build: {
-    outDir: fileURLToPath(new URL("../dist/", import.meta.url)),
+    outDir: join(repo, "dist"),
     emptyOutDir: true,
     target: "es2022",
   },

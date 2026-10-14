@@ -49,6 +49,9 @@ jobs:
       # "The `frontendDist` configuration is set to `\"../dist\"` but this path doesn't exist"，
       # 看起来像 Rust 坏了，其实是缺产物（run 38578108239 就是这么红的）。
       - name: 构建前端产物（供宏嵌入）
+        # working-directory 必须是仓库根：这个 job 的默认目录是 src-tauri，
+        # 而 vite.config.ts 现在以 cwd 为锚算路径。
+        working-directory: .
         run: npm install --no-audit --no-fund && npm run build
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
