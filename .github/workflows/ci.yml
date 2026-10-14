@@ -102,8 +102,13 @@ jobs:
           grep -qE '<script[^>]*type="module"' dist/index.html || { echo "index.html 里没有模块入口"; exit 1; }
           echo "PASS dist：$n 个文件，$(du -sk dist | cut -f1) KB；js=$(find dist -name '*.js' | wc -l) css=$(find dist -name '*.css' | wc -l)"
 
-  probe:
-    runs-on: ubuntu-24.04
+      # dist 做成可下载的产物：这样不装应用也能把界面真实渲染出来核对（浏览器打开 dist/index.html?mock=1）。
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: web-dist
+          path: dist/
+          if-no-files-found: error
+
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
