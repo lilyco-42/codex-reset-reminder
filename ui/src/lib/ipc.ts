@@ -18,7 +18,9 @@ async function call<T>(cmd: string, args?: Record<string, unknown>): Promise<T> 
   }
   if (isPreview) {
     const { mockCheckResult, mockPlatform } = await import("./mock");
-    if (cmd === "crr_check" || cmd === "crr_set_settings") return mockCheckResult() as unknown as T;
+    if (cmd === "crr_check") return mockCheckResult() as unknown as T;
+    // 保存要回读的是设置本身，返回整份 CheckResult 会让预览里的表单被垃圾值覆盖（实测截图时踩到）
+    if (cmd === "crr_set_settings") return (args?.settings ?? mockCheckResult().settings) as unknown as T;
     if (cmd === "crr_local") return (mockCheckResult().local ?? null) as unknown as T;
     if (cmd === "crr_platform") return mockPlatform() as unknown as T;
     return undefined as T; // crr_reset_history / crr_window 在预览里无事可做
