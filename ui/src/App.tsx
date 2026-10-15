@@ -144,8 +144,11 @@ export default function App() {
       setResult(r);
       setLocal(r.local ?? null);
       if (r.settings) {
-        setSettings(r.settings);
-        schedule(r.settings);
+        // 旧版回填时是 Math.round 过的：后端存的是浮点，Slider 的 step=1 拿到 80.4 会错位
+        const s = r.settings;
+        const rounded = { ...s, warn_percent: Math.round(s.warn_percent), critical_percent: Math.round(s.critical_percent) };
+        setSettings(rounded);
+        schedule(s);
       }
       const srcLabel = r.source_used === "mirror" ? "数据源：镜像" : "数据源：直连";
       const err = (r.errors || [])[0];
@@ -206,7 +209,12 @@ export default function App() {
   async function save() {
     setNote("保存中…");
     try {
-      const saved = await crrSetSettings(settings);
+      // 旧版 formToSettings 会 trim 这两个 URL，丢了就会把尾空格写进 settings.json
+      const saved = await crrSetSettings({
+        ...settings,
+        push_url: settings.push_url.trim(),
+        mirror_url: settings.mirror_url.trim(),
+      });
       setSettings(saved);
       setNote(`已保存并回读校验 · 间隔 ${saved.poll_minutes} 分钟`);
       schedule(saved);
@@ -278,7 +286,7 @@ export default function App() {
               <RefreshCw data-icon="inline-start" />
               立即检查
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
+            <Button size="sm" variant="outline" onClick={() => setSettingsOpen(true)} aria-expanded={settingsOpen} aria-haspopup="dialog">
               <Settings2 data-icon="inline-start" />
               设置
             </Button>
