@@ -152,10 +152,13 @@ export default function App() {
       }
       const srcLabel = r.source_used === "mirror" ? "数据源：镜像" : "数据源：直连";
       const err = (r.errors || [])[0];
-      if (err) setStatus({ text: `最近一次检查有错误（${srcLabel}）：${err}`, tone: "crit" });
+      // tone 用 warn 而不是 crit：旧版就是这个值（状态行文字两种都是红色，只有小圆点颜色不同，别顺手改）
+      if (err) setStatus({ text: `最近一次检查有错误（${srcLabel}）：${err}`, tone: "warn" });
       else if (r.fired?.length)
         setStatus({ text: `已发出 ${r.fired.length} 条提醒 · ${srcLabel} · ${fmt(r.fetched_at_ms)}`, tone: "ok" });
       else setStatus({ text: `最近检查 ${fmt(r.fetched_at_ms)} · ${srcLabel} · 无新提醒`, tone: "ok" });
+      // 这一条在旧版是死代码：renderAlerts() 先设了静默提示，随后 render() 无条件 setStatus 把它覆盖了，
+      // 所以用户从来没看见过"静默时段压住 N 条"。这里放在最后写，让它真的能显示出来。
       if ((r.suppressed_in_quiet || 0) > 0)
         setStatus({ text: `静默时段压住 ${r.suppressed_in_quiet} 条，出时段后会补发。`, tone: "quiet" });
     } catch (e) {
