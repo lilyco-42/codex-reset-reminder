@@ -1,4 +1,12 @@
 {
+  "alert.tsx": {
+    "bytes": 1613,
+    "npmDependencies": [
+      "cn"
+    ],
+    "sha256": "afeb8ee000195794ccffbf82ab1860bf083e61d355cbe1385fc6ad73fdecfae8",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/alert.json"
+  },
   "badge.tsx": {
     "bytes": 1775,
     "npmDependencies": [
@@ -60,6 +68,24 @@
     "sha256": "1f6eb12292b38dd1601319ff7d6fc7dfefb8b988813962d688b3a9782000980a",
     "source": "https://ui.shadcn.com/r/styles/new-york-v4/progress.json"
   },
+  "scroll-area.tsx": {
+    "bytes": 1638,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "55264573642c8d9182c15434638a3007b6e03e9b929bf05fbb6db8b55d5fcd36",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/scroll-area.json"
+  },
+  "select.tsx": {
+    "bytes": 6352,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "a25676a80cb8ea9b90a1daad062dbbd84cafba68d72dd868f390c3bf487e230c",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/select.json"
+  },
   "separator.tsx": {
     "bytes": 693,
     "npmDependencies": [
@@ -68,6 +94,23 @@
     ],
     "sha256": "f9ec8dde26a5c3f2af1c48a0c588c164e350567cddc5c4070cf5ba780e984f26",
     "source": "https://ui.shadcn.com/r/styles/new-york-v4/separator.json"
+  },
+  "skeleton.tsx": {
+    "bytes": 276,
+    "npmDependencies": [
+      "cn"
+    ],
+    "sha256": "ba48dd5be5a6a1378bd4e011028654b5bf419f1e7d20ee4b9f8330c1264e7239",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/skeleton.json"
+  },
+  "slider.tsx": {
+    "bytes": 1990,
+    "npmDependencies": [
+      "cn",
+      "radix-ui"
+    ],
+    "sha256": "9ff8523ba99a37b3ed9ec1e55969926e8c92d44e158bdddf04f0e409e43a4d72",
+    "source": "https://ui.shadcn.com/r/styles/new-york-v4/slider.json"
   },
   "switch.tsx": {
     "bytes": 1407,

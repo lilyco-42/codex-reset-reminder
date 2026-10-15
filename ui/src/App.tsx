@@ -2,6 +2,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { RefreshCw, Settings2, EyeOff, ExternalLink } from "lucide-react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -29,6 +40,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/toaster";
 import { countdown, fmt, humanBytes, safeUrl, tzOffsetMinutes } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import {
   crrCheck,
   crrHide,
@@ -44,13 +56,15 @@ import type { Alert, CheckResult, LocalSnapshot, PlatformInfo, Settings, WindowL
 
 type Tone = "" | "ok" | "warn" | "crit" | "quiet";
 
-const TONE_TEXT: Record<Tone, string> = {
-  "": "text-muted-foreground",
-  ok: "text-ok",
-  warn: "text-warn",
-  crit: "text-crit",
-  quiet: "text-primary",
+// Alert 只有 default / destructive 两个变体，这里用 token 色补出 ok / warn / quiet 三种左色条
+const TONE_ALERT: Record<Tone, string> = {
+  "": "border-l-muted-foreground text-muted-foreground",
+  ok: "border-l-ok text-ok",
+  warn: "border-l-warn text-warn",
+  crit: "border-l-crit text-crit",
+  quiet: "border-l-primary text-primary",
 };
+
 
 const DEFAULTS: Settings = {
   poll_minutes: 15,
@@ -274,7 +288,9 @@ export default function App() {
           </div>
         </header>
 
-        <p className={`tnum mx-3.5 mt-2 min-h-[18px] text-[12.5px] ${TONE_TEXT[status.tone]}`}>{status.text}</p>
+        <Alert className={cn("mt-2 border-l-4 py-3", TONE_ALERT[status.tone])}>
+          <AlertDescription className="tnum text-[12.5px]">{status.text}</AlertDescription>
+        </Alert>
 
         <main className="grid flex-1 auto-rows-min gap-2.5 p-3.5 md:grid-cols-2">
           <Card className="md:col-span-2">
@@ -285,7 +301,14 @@ export default function App() {
               <CardDescription className="text-xs">读 ~/.codex/sessions 尾部，不经网络</CardDescription>
             </CardHeader>
             <CardContent>
-              {!rl ? (
+              {!local ? (
+                <>
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="mt-3 h-1.5 w-full" />
+                  <Skeleton className="mt-6 h-4 w-28" />
+                  <Skeleton className="mt-3 h-1.5 w-full" />
+                </>
+              ) : !rl ? (
                 <p className="text-xs text-muted-foreground">该账号没有窗口额度信息。</p>
               ) : windows.length ? (
                 windows.map(([w, n]) => <WindowRow key={n} win={w} name={n} />)
@@ -368,6 +391,7 @@ export default function App() {
             </CardHeader>
             <CardContent>
               {history.length ? (
+                <ScrollArea className="max-h-[260px] pr-3">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -400,6 +424,7 @@ export default function App() {
                     ))}
                   </TableBody>
                 </Table>
+                </ScrollArea>
               ) : (
                 <p className="text-xs text-muted-foreground">还没有触发过提醒。</p>
               )}
@@ -434,15 +459,24 @@ export default function App() {
             </DialogHeader>
 
             <div className="grid grid-cols-2 gap-3">
-              <Label className="flex flex-col gap-1 text-xs">
-                检查间隔（分）
-                <Input
-                  type="number"
-                  min={1}
-                  value={settings.poll_minutes}
-                  onChange={(e) => setSettings({ ...settings, poll_minutes: num(e.target.value, 15) })}
-                />
-              </Label>
+              <div className="flex flex-col gap-1 text-xs">
+                <Label htmlFor="s-poll">检查间隔（分）</Label>
+                <Select
+                  value={String(settings.poll_minutes)}
+                  onValueChange={(v) => setSettings({ ...settings, poll_minutes: num(v, 15) })}
+                >
+                  <SelectTrigger id="s-poll" size="sm" className="w-full">
+                    <SelectValue placeholder="选择间隔" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 5, 10, 15, 30, 60].map((m) => (
+                      <SelectItem key={m} value={String(m)}>
+                        {m} 分钟
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Label className="flex flex-col gap-1 text-xs">
                 即将重置提醒（分）
                 <Input
@@ -452,26 +486,28 @@ export default function App() {
                   onChange={(e) => setSettings({ ...settings, reset_soon_minutes: num(e.target.value, 15) })}
                 />
               </Label>
-              <Label className="flex flex-col gap-1 text-xs">
-                提醒阈值 %（信息用）
-                <Input
-                  type="number"
+              <div className="flex flex-col gap-2 text-xs">
+                <Label htmlFor="s-warn">提醒阈值 <span className="tnum">{settings.warn_percent}%</span></Label>
+                <Slider
+                  id="s-warn"
                   min={1}
                   max={100}
-                  value={settings.warn_percent}
-                  onChange={(e) => setSettings({ ...settings, warn_percent: num(e.target.value, 80) })}
+                  step={1}
+                  value={[settings.warn_percent]}
+                  onValueChange={([v]) => setSettings({ ...settings, warn_percent: v })}
                 />
-              </Label>
-              <Label className="flex flex-col gap-1 text-xs">
-                严重阈值 %
-                <Input
-                  type="number"
+              </div>
+              <div className="flex flex-col gap-2 text-xs">
+                <Label htmlFor="s-crit">严重阈值 <span className="tnum">{settings.critical_percent}%</span></Label>
+                <Slider
+                  id="s-crit"
                   min={1}
                   max={100}
-                  value={settings.critical_percent}
-                  onChange={(e) => setSettings({ ...settings, critical_percent: num(e.target.value, 95) })}
+                  step={1}
+                  value={[settings.critical_percent]}
+                  onValueChange={([v]) => setSettings({ ...settings, critical_percent: v })}
                 />
-              </Label>
+              </div>
               <Label className="flex flex-col gap-1 text-xs">
                 静默开始（时）
                 <Input

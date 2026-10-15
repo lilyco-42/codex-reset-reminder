@@ -29,5 +29,6 @@ export const countdown = (targetMs: number) => {
 // 后端只做整数运算，时区一律取设备当前值
 export const tzOffsetMinutes = () => -new Date().getTimezoneOffset();
 
+// 除的是 1048576，所以单位必须写 MiB —— 旧版写着 MB 是错的（1,850,346,264 B 会显示成 "1765 MB"）。
 export const humanBytes = (bytes: number) =>
-  bytes > 1048576 ? `${(bytes / 1048576).toFixed(0)} MB` : `${bytes} B`;
+  bytes > 1048576 ? `${(bytes / 1048576).toFixed(0)} MiB` : `${bytes} B`;
