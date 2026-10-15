@@ -1,7 +1,7 @@
 # Codex 额度重置提醒器
 
 跨平台监控 Codex 额度窗口与全局重置事件，在重置前后主动发系统通知。
-Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
+Tauri 2 + React 19 / Tailwind v4 / shadcn/ui 前端（构建走 Vite，产物在 `dist/`）。
 
 | 平台 | 状态 | 产物 |
 | --- | --- | --- |
@@ -49,12 +49,32 @@ Tauri 2 + 纯 HTML/JS 前端，零 npm 运行时依赖。
 ## 本地开发
 
 ```bash
-npm install          # 只装 @tauri-apps/cli 一个开发依赖
-npm run dev          # tauri dev
+npm install          # 前端依赖（react / radix-ui / sonner / tailwind…）+ @tauri-apps/cli
+npm run build        # vite 构建到 dist/（tauri 的 beforeBuildCommand 就是这条）
+npm run typecheck    # tsc --noEmit
+npm run tauri dev    # 起桌面壳：它会自己拉起 vite dev server（固定 1420 端口）
 npm run test         # cargo test --locked
 npm run probe        # 校验线上数据源结构
+node scripts/check-lock.mjs   # 审计锁：有节点没版本号会让 linux 上的 npm ci 直接崩
 npm run icon         # 从 src-tauri/app-icon.png 重新生成图标集
 ```
+
+## 前端
+
+界面是 shadcn/ui 组件，源码 vendored 在 `ui/src/components/ui/`（16 个），
+每个文件的来源 URL 与 sha256 记在 `ui/src/components/ui/vendor-manifest.json` ——
+组件是从 `ui.shadcn.com/r` 取的逐字源，只改写了 import 别名，没有跑第三方 CLI。
+配色是从换框架之前那份 `styles.css` 原样搬进 Tailwind token 的，且这个应用只有深色，
+所以 `:root` 与 `.dark` 同值；要改视觉请显式说，别让它跟着框架升级偷偷变。
+
+不装应用也能看界面：CI 的 `web` 车道会把 `dist/` 存成 artifact，下载后
+`python -m http.server -d <目录>` 起来开 `index.html?mock=1` —— 数值取自
+`src-tauri/tests/fixtures/` 那两份真实抓包（只把时间平移到当下），界面上会明标"演示数据"。
+`file://` 直接双击打不开（ES module 被同源策略挡），必须走 http。
+
+CI 各车道用 `npm install` 而不是 `npm ci`：`@tauri-apps/cli` 的可选二进制是按平台装的，
+而 `--package-lock-only` 生成的锁只含当前平台那一条，linux 上 `npm ci` 会以
+`EUSAGE … Missing: @tauri-apps/cli-linux-x64-gnu` 拒绝。锁负责钉住 JS 依赖树，这个分工是刻意的。
 
 安卓车道必须走 `npm run tauri`：Tauri 生成的 gradle 里 `rustBuild<Abi>` 任务
 直接调用 `npm run tauri`，所以 `package.json` 里必须有 `tauri` 脚本和本地 CLI
