@@ -52,7 +52,8 @@ import {
   isRealHost,
   onTrayCheck,
 } from "@/lib/ipc";
-import type { Alert, CheckResult, LocalSnapshot, PlatformInfo, Settings, WindowLimit } from "@/lib/types";
+// 提醒记录的类型在这里叫 ReminderAlert：组件那边已经占了 Alert 这个名字（同名会让 tsc 报 TS2300）
+import type { Alert as ReminderAlert, CheckResult, LocalSnapshot, PlatformInfo, Settings, WindowLimit } from "@/lib/types";
 
 type Tone = "" | "ok" | "warn" | "crit" | "quiet";
 
@@ -234,7 +235,7 @@ export default function App() {
   if (rl?.primary) windows.push([rl.primary, "5 小时窗口"]);
   if (rl?.secondary) windows.push([rl.secondary, "每周窗口"]);
   const credits = rl?.credits;
-  const history: Alert[] = (result?.history || []).slice().reverse().slice(0, 20);
+  const history: ReminderAlert[] = (result?.history || []).slice().reverse().slice(0, 20);
   const firedKeys = new Set((result?.fired || []).map((a) => a.key));
   const st = result?.status;
   const trouble = !!st && (st.degraded || (st.incident_count || 0) > 0 || (!!st.codex && st.codex !== "operational"));
